@@ -1,0 +1,29 @@
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAQ4BEc8RRnrGLg2oS-cA4aGUEGiCctYPo",
+  authDomain: "aianalyst-61509.firebaseapp.com",
+  projectId: "aianalyst-61509",
+  storageBucket: "aianalyst-61509.firebasestorage.app",
+  messagingSenderId: "78713256065",
+  appId: "1:78713256065:web:bc01b58174b50e79d9b580",
+  measurementId: "G-FQK8LZ09K5"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+
+// helpers
+export const signUpWithEmail = (email, password) => createUserWithEmailAndPassword(auth, email, password);
+export const signInWithEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
+export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);

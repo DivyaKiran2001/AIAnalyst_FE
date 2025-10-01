@@ -1,0 +1,67 @@
+# -----------------------------
+# Python
+# -----------------------------
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# -----------------------------
+# FastAPI / Starlette / Backend
+# -----------------------------
+*.sqlite3
+*.db
+*.log
+instance/
+*.env
+.env
+
+# -----------------------------
+# Node / React / Frontend
+# -----------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+build/
+dist/
+out/
+
+# -----------------------------
+# Gitpod
+# -----------------------------
+.gitpod/
+.workspace/
+
+# -----------------------------
+# IDE / Editor files
+# -----------------------------
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# -----------------------------
+# Misc
+# -----------------------------
+.DS_Store
+Thumbs.db
+
+# Firebase Admin SDK JSON file
+*.json
