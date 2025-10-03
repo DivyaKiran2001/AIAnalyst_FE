@@ -29,7 +29,7 @@ googleProvider.setCustomParameters({
 
 // helpers
 export const signUpWithEmail = (email, password) => createUserWithEmailAndPassword(auth, email, password);
-export const signInWithEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
+export const loginInWithEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
 
 // Google auth using redirect

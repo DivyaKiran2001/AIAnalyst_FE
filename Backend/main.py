@@ -91,7 +91,10 @@ async def auth_user(request: Request):
 
     existing_user = users_collection.find_one({"email": email})
     if existing_user:
-        raise HTTPException(status_code=400, detail="User already exists")
+        # Update role if different
+        if existing_user.get("role") != role:
+            users_collection.update_one({"email": email}, {"$set": {"role": role}})
+        return {"status": "success", "user": {"email": email, "role": existing_user.get("role")}}
 
     users_collection.insert_one({
         "uid": decoded_token["uid"],

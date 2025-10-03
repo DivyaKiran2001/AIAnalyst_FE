@@ -16,12 +16,16 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import SignupLP from "./SignupLP";
 import Signup from "./Signup";
+import FounderDashboard from "./FounderDashboard";
+import InvestorDashboard from "./InvestorDashboard";
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<SignupLP />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/founder-dashboard" element={<FounderDashboard/>}/>
+      <Route path="/investor-dashboard" element={<InvestorDashboard/>}/>
     </Routes>
   );
 }
