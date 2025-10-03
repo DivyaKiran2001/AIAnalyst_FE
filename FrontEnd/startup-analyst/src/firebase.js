@@ -22,8 +22,16 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: "consent", // Forces Google to show consent every time
+});
+
 
 // helpers
 export const signUpWithEmail = (email, password) => createUserWithEmailAndPassword(auth, email, password);
 export const signInWithEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
+
+// Google auth using redirect
+// export const signInWithGoogle = () =>
+//   signInWithRedirect(auth, googleProvider);

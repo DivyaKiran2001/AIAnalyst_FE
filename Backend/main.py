@@ -28,11 +28,12 @@ try:
         validator={
             "$jsonSchema": {
                 "bsonType": "object",
-                "required": ["email", "uid","password"],
+                "required": ["email", "uid","password","role"],
                 "properties": {
                     "email": {"bsonType": "string"},
                     "uid": {"bsonType": "string"},
-                    "password": {"bsonType": "string"}
+                    "password": {"bsonType": "string"},
+                    "role": {"bsonType": "string"}
                 }
             }
         }
@@ -78,9 +79,13 @@ async def auth_user(request: Request):
     print(user_data)
     email = user_data.get("email")
     password = user_data.get("password")
+    role = user_data.get("role", "")
 
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
+    if not role:
+        raise HTTPException(status_code=400, detail="Role is required")
+
 
     
 
@@ -91,10 +96,10 @@ async def auth_user(request: Request):
     users_collection.insert_one({
         "uid": decoded_token["uid"],
         "email": email,
-        "password": password or ""
+        "password": password or "",
+        "role": role
     })
 
-    print("Inserted data")
+    print(f"Inserted user: {email} as {role}")
 
-
-    return {"status": "success", "user": {"email": email}}
+    return {"status": "success", "user": {"email": email, "role": role}}
