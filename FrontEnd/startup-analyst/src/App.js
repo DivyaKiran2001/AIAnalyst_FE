@@ -18,7 +18,7 @@ import SignupLP from "./SignupLP";
 import Signup from "./Signup";
 import FounderDashboard from "./FounderDashboard";
 import InvestorDashboard from "./InvestorDashboard";
-
+import StartupRegistration from "./StartupRegistration";
 function App() {
   return (
     <Routes>
@@ -26,6 +26,7 @@ function App() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/founder-dashboard" element={<FounderDashboard/>}/>
       <Route path="/investor-dashboard" element={<InvestorDashboard/>}/>
+      <Route path="/startup-registration" element={<StartupRegistration />} />
     </Routes>
   );
 }

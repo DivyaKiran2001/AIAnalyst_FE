@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword ,RecaptchaVerifier, signInWithPhoneNumber,sendEmailVerification} from "firebase/auth";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -32,6 +32,13 @@ export const signUpWithEmail = (email, password) => createUserWithEmailAndPasswo
 export const loginInWithEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
 
+// Send email verification
+const sendVerificationEmail = (user) => sendEmailVerification(user, {
+  url: "https://3000-genaihackat-aianalystfe-hgc0ltv9os0.ws-us121.gitpod.io/signup" // Redirect after verification
+});
+
 // Google auth using redirect
 // export const signInWithGoogle = () =>
 //   signInWithRedirect(auth, googleProvider);
+
+export { RecaptchaVerifier, signInWithPhoneNumber,sendVerificationEmail };

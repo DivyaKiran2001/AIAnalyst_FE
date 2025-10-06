@@ -47,7 +47,7 @@ users_collection = db["Users"]
 import firebase_admin
 from firebase_admin import credentials, auth
 
-cred = credentials.Certificate("aianalyst-61509-firebase-adminsdk-fbsvc-ae129ed19c.json")  # download from Firebase console
+cred = credentials.Certificate("aianalyst-61509-firebase-adminsdk-fbsvc-b559389ff7.json")  # download from Firebase console
 firebase_admin.initialize_app(cred)
 
 def verify_firebase_token(token: str):

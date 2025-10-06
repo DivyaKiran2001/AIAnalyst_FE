@@ -1,41 +1,85 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-const FounderDashboard = () => {
+export default function FounderDashboard() {
   const navigate = useNavigate();
+
+  const handleNavigation = (path) => {
+    navigate(path);
+  };
 
   const handleLogout = () => {
     navigate("/"); // redirect to login/signup page
   };
 
   return (
-    <div className="container mt-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Founder Dashboard</h2>
-        <button className="btn btn-danger" onClick={handleLogout}>Logout</button>
-      </div>
+    <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center bg-light">
+      <div className="container text-center">
+        <h1 className="mb-4 text-primary fw-bold">Founder Dashboard</h1>
+        <p className="text-muted mb-5">
+          Welcome back! Choose an option to continue.
+        </p>
 
-      <div className="card p-4 mb-3">
-        <h4>Welcome, Founder!</h4>
-        <p>Here you can manage your startup, view analytics, and track progress.</p>
-      </div>
+        <div className="row justify-content-center">
+          {/* Startup Registration */}
+          <div className="col-md-4 mb-3">
+            <div className="card shadow-sm border-0 rounded-4">
+              <div className="card-body">
+                <h5 className="card-title mb-3">Startup Registration</h5>
+                <p className="card-text text-muted">
+                  Register your startup to get started with our AI evaluation system.
+                </p>
+                <button
+                  className="btn btn-primary w-100"
+                  onClick={() => handleNavigation("/startup-registration")}
+                >
+                  Go to Registration
+                </button>
+              </div>
+            </div>
+          </div>
 
-      <div className="row">
-        <div className="col-md-6">
-          <div className="card p-3 mb-3">
-            <h5>My Startups</h5>
-            <p>List of your startups, traction, and performance metrics.</p>
+          {/* View Registered Startups */}
+          <div className="col-md-4 mb-3">
+            <div className="card shadow-sm border-0 rounded-4">
+              <div className="card-body">
+                <h5 className="card-title mb-3">View My Startups</h5>
+                <p className="card-text text-muted">
+                  See your registered startups and their evaluation progress.
+                </p>
+                <button className="btn btn-outline-primary w-100" disabled>
+                  Coming Soon
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Profile Settings */}
+          <div className="col-md-4 mb-3">
+            <div className="card shadow-sm border-0 rounded-4">
+              <div className="card-body">
+                <h5 className="card-title mb-3">Profile Settings</h5>
+                <p className="card-text text-muted">
+                  Manage your founder profile and update contact information.
+                </p>
+                <button className="btn btn-outline-primary w-100" disabled>
+                  Coming Soon
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="col-md-6">
-          <div className="card p-3 mb-3">
-            <h5>Funding Requests</h5>
-            <p>Track investor requests, funding status, and feedback.</p>
-          </div>
+
+        <div className="mt-5">
+          <button
+            className="btn-danger px-4"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
         </div>
       </div>
     </div>
   );
-};
-
-export default FounderDashboard;
+}
