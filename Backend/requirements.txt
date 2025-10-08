@@ -20,3 +20,5 @@ deprecated==1.2.14
 pymongo
 firebase-admin
 PyJWT
+pydantic[email]
+sendgrid
