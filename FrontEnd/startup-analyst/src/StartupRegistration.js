@@ -322,8 +322,11 @@ import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/bootstrap.css';
 import axios from 'axios';
 import { getAuth } from 'firebase/auth';
+import { useNavigate } from "react-router-dom";
+
 
 export default function StartupRegistration() {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     yourName: '',
@@ -456,21 +459,22 @@ await axios.post(
 
 
       alert('✅ Founder & Startup details submitted successfully!');
-      setCurrentStep(1);
-      setFormData({
-        yourName: '',
-        emailId: '',
-        gender: 'Female',
-        phoneNumber: '',
-        linkedinUrl: '',
-        singleFounder: 'Yes',
-        referrer: '',
-        startupName: '',
-        registeredName: '',
-        incorporationMonth: '',
-        incorporationYear: '',
-        about: ''
-      });
+      // setCurrentStep(1);
+      // setFormData({
+      //   yourName: '',
+      //   emailId: '',
+      //   gender: 'Female',
+      //   phoneNumber: '',
+      //   linkedinUrl: '',
+      //   singleFounder: 'Yes',
+      //   referrer: '',
+      //   startupName: '',
+      //   registeredName: '',
+      //   incorporationMonth: '',
+      //   incorporationYear: '',
+      //   about: ''
+      // });
+       navigate("/founder-dashboard");
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.detail || '❌ Failed to submit details');

@@ -356,3 +356,8 @@ def get_startup_details(request: Request):
 
     startup["_id"] = str(startup["_id"])
     return startup
+
+@app.get("/api/startups")
+def get_startups():
+    startups = list(startup_collection.find({}, {"_id": 0}))
+    return startups
