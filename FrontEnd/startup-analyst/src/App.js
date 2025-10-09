@@ -27,6 +27,8 @@ function App() {
       <Route path="/founder-dashboard" element={<FounderDashboard/>}/>
       <Route path="/investor-dashboard" element={<InvestorDashboard/>}/>
       <Route path="/startup-registration" element={<StartupRegistration />} />
+       {/* Chat Route */}
+      <Route path="/chat" element={<ChatPage />} />
     </Routes>
   );
 }

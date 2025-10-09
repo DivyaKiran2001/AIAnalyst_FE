@@ -116,6 +116,43 @@ try:
     print("✅ 'StartupDetails' collection created with schema.")
 except Exception:
     print("ℹ️ 'StartupDetails' collection already exists.")
+
+# ----------------- Create Chats collection with schema validation -----------------
+try:
+    db.create_collection(
+        "Chats",
+        validator={
+            "$jsonSchema": {
+                "bsonType": "object",
+                "required": ["participants", "messages", "createdAt"],
+                "properties": {
+                    "participants": {
+                        "bsonType": "array",
+                        "minItems": 2,
+                        "items": {"bsonType": "string"}  # emails or UIDs
+                    },
+                    "messages": {
+                        "bsonType": "array",
+                        "items": {
+                            "bsonType": "object",
+                            "required": ["senderId", "text", "timestamp"],
+                            "properties": {
+                                "senderId": {"bsonType": "string"},
+                                "text": {"bsonType": "string"},
+                                "timestamp": {"bsonType": "date"},
+                            },
+                        },
+                    },
+                    "createdAt": {"bsonType": "date"},
+                },
+            }
+        },
+    )
+    print("✅ 'Chats' collection created with schema validation")
+except Exception:
+    print("ℹ️ 'Chats' collection already exists")
+
+chat_collection = db["Chats"]
 users_collection = db["Users"]
 
 founder_collection = db["FounderDetails"]
@@ -141,88 +178,14 @@ class StartupDetails(BaseModel):
     about: str
 
 
-# # Store OTPs temporarily: {email: {"otp": "123456", "expires": datetime}}
-# otp_store = {}
-
-# SMTP_SERVER = "smtp.gmail.com"  # or your SMTP server
-# SMTP_PORT = 587
-# SMTP_EMAIL = "genaihackathon4@gmail.com"
-# SMTP_PASSWORD = "hbkiyzjtvmcdgvin"  # Use App Password if Gmail
-
-# try:
-#     server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-#     server.starttls()
-#     server.login(SMTP_EMAIL, SMTP_PASSWORD)
-#     print("Login successful")
-#     server.quit()
-# except Exception as e:
-#     print("Error:", e)
-
-# class EmailRequest(BaseModel):
-#     email: EmailStr
-
-# class OTPRequest(BaseModel):
-#     email: EmailStr
-#     otp: str
-
-# def generate_otp(length=6):
-#     return ''.join(random.choices(string.digits, k=length))
-
-# def send_email(to_email, otp):
-#     subject = "Your OTP for Startup Registration"
-#     body = f"Your OTP is: {otp}\nIt will expire in 5 minutes."
-#     msg = MIMEText(body)
-#     msg['Subject'] = subject
-#     msg['From'] = SMTP_EMAIL
-#     msg['To'] = to_email
-
-#     with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-#         server.starttls()
-#         server.login(SMTP_EMAIL, SMTP_PASSWORD)
-#         server.send_message(msg)
-
-
-# @app.post("/send-otp")
-# def send_otp(request: EmailRequest):
-#     """Generate and send OTP to user's email."""
-#     try:
-#         otp = generate_otp()
-#         otp_store[request.email] = {
-#             "otp": otp,
-#             "expires": datetime.utcnow() + timedelta(minutes=5)
-#         }
-
-#         print(f"📧 Sending OTP to: {request.email}, OTP: {otp}")
-
-#         send_email(request.email, otp)
-
-#         print("✅ OTP sent successfully")
-#         return {"message": "OTP sent successfully"}
-    
-#     except Exception as e:
-#         print("❌ ERROR sending OTP:", e)
-#         traceback.print_exc()
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.post("/verify-otp")
-# def verify_otp(request: OTPRequest):
-#     record = otp_store.get(request.email)
-#     if not record:
-#         raise HTTPException(status_code=400, detail="No OTP sent for this email")
-#     if datetime.utcnow() > record["expires"]:
-#         del otp_store[request.email]
-#         raise HTTPException(status_code=400, detail="OTP expired")
-#     if record["otp"] != request.otp:
-#         raise HTTPException(status_code=400, detail="Invalid OTP")
-    
-#     # OTP verified, delete it
-#     del otp_store[request.email]
-#     return {"message": "OTP verified successfully"}
+# ----------------- Socket.IO Server -----------------
+sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
+socket_app = socketio.ASGIApp(sio, app)
 
 import firebase_admin
 from firebase_admin import credentials, auth
 
-cred = credentials.Certificate("aianalyst-61509-firebase-adminsdk-fbsvc-b559389ff7.json")  # download from Firebase console
+cred = credentials.Certificate("aianalyst-61509-firebase-adminsdk-fbsvc-5b4a8376b1.json")  # download from Firebase console
 firebase_admin.initialize_app(cred)
 
 def verify_firebase_token(token: str):
@@ -361,3 +324,94 @@ def get_startup_details(request: Request):
 def get_startups():
     startups = list(startup_collection.find({}, {"_id": 0}))
     return startups
+
+# ----------------- Socket.IO Events -----------------
+@sio.event
+async def connect(sid, environ):
+    print(f"Client connected: {sid}")
+
+@sio.event
+async def disconnect(sid):
+    print(f"Client disconnected: {sid}")
+    
+@sio.event
+async def join_room(sid, data):
+    """
+    User joins a room
+    data: { "participants": ["founderEmail", "investorEmail"] }
+    """
+    participants = sorted(data["participants"])  # sort to make room unique
+    room = "_".join(participants)
+    await sio.save_session(sid, {"room": room})
+    sio.enter_room(sid, room)
+    print(f"{sid} joined room {room}")
+
+@sio.event
+async def send_message(sid, data):
+    """
+    Receive a message from client and broadcast it to the room.
+    data: { "senderId": "...", "text": "...", "participants": ["founderEmail", "investorEmail"] }
+    """
+    participants = sorted(data["participants"])
+    room = "_".join(participants)
+    message = {
+        "senderId": data["senderId"],
+        "text": data["text"],
+        "timestamp": datetime.utcnow()
+    }
+
+    # Save message to MongoDB
+    chat_doc = chat_collection.find_one({"participants": participants})
+    if chat_doc:
+        chat_collection.update_one(
+            {"participants": participants},
+            {"$push": {"messages": message}}
+        )
+    else:
+        chat_collection.insert_one({
+            "participants": participants,
+            "messages": [message],
+            "createdAt": datetime.utcnow()
+        })
+
+    # Broadcast message to room
+    await sio.emit("receive_message", message, room=room)
+
+# ----------------- API to fetch chat history -----------------
+@app.get("/api/chat/")
+def get_chat_history(participants: list[str]):
+    """
+    Fetch chat history by participants array
+    Example: /api/chat/?participants=founder@example.com&participants=investor@example.com
+    """
+    participants_sorted = sorted(participants)
+    chat = chat_collection.find_one({"participants": participants_sorted})
+    if chat:
+        chat["_id"] = str(chat["_id"])
+        for msg in chat["messages"]:
+            msg["timestamp"] = msg["timestamp"].isoformat()
+        return chat
+    return {"participants": participants_sorted, "messages": []}
+
+# ----------------- Example MongoDB document -----------------
+"""
+Chats collection schema:
+
+{
+    "_id": ObjectId(),
+    "participants": ["founder@example.com", "investor@example.com"],
+    "messages": [
+        {
+            "senderId": "founder123",
+            "text": "Hello, I’m interested in funding your startup",
+            "timestamp": datetime.utcnow()
+        },
+        {
+            "senderId": "investor456",
+            "text": "Great! Let’s discuss further",
+            "timestamp": datetime.utcnow()
+        }
+    ],
+    "createdAt": datetime.utcnow()
+}
+"""

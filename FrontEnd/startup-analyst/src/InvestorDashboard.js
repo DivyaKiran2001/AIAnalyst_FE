@@ -1,46 +1,3 @@
-// import React from "react";
-// import { useNavigate } from "react-router-dom";
-
-// const InvestorDashboard = () => {
-//   const navigate = useNavigate();
-
-//   const handleLogout = () => {
-//     navigate("/"); // redirect to login/signup page
-//   };
-
-//   return (
-//     <div className="container mt-5">
-//       <div className="d-flex justify-content-between align-items-center mb-4">
-//         <h2>Investor Dashboard</h2>
-//         <button className="btn btn-danger" onClick={handleLogout}>Logout</button>
-//       </div>
-
-//       <div className="card p-4 mb-3">
-//         <h4>Welcome, Investor!</h4>
-//         <p>Here you can review startups, check investment opportunities, and track your portfolio.</p>
-//       </div>
-
-//       <div className="row">
-//         <div className="col-md-6">
-//           <div className="card p-3 mb-3">
-//             <h5>Startup Pipeline</h5>
-//             <p>See startups seeking funding and their details.</p>
-//           </div>
-//         </div>
-//         <div className="col-md-6">
-//           <div className="card p-3 mb-3">
-//             <h5>Investment Portfolio</h5>
-//             <p>Track your invested startups, performance, and returns.</p>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default InvestorDashboard;
-
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -58,7 +15,7 @@ const InvestorDashboard = () => {
   useEffect(() => {
     const fetchStartups = async () => {
       try {
-        const res = await fetch("https://8000-genaihackat-aianalystfe-hgc0ltv9os0.ws-us121.gitpod.io/api/startups");
+        const res = await fetch("https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/startups");
         const data = await res.json();
         setStartups(data);
       } catch (err) {
@@ -102,7 +59,8 @@ const InvestorDashboard = () => {
                 <p><strong>Registered Name:</strong> {startup.registeredName}</p>
                 <p><strong>Incorporation:</strong> {startup.incorporationMonth} {startup.incorporationYear}</p>
                 <p><strong>About:</strong> {startup.about}</p>
-
+<p><strong>Founder:</strong> {startup.emailId}</p>
+                <button className="btn btn-outline-success mt-2" onClick={() => handleChat(startup.emailId)}>Chat with Founder</button>
             
               
               </div>
