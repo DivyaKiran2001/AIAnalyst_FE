@@ -11,11 +11,16 @@ import random
 import string
 from email.mime.text import MIMEText
 from datetime import datetime, timedelta
-
+import socketio
 app = FastAPI()
+origins = [
+    "https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io",  # frontend
+    "https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io",  # backend
+    "http://localhost:3000",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -117,6 +122,28 @@ try:
 except Exception:
     print("ℹ️ 'StartupDetails' collection already exists.")
 
+try:
+    db.create_collection(
+        "InvestorInterests",
+        validator={
+            "$jsonSchema": {
+                "bsonType": "object",
+                "required": ["startupName", "founderEmail", "investorEmail", "status", "createdAt"],
+                "properties": {
+                    "startupName": {"bsonType": "string"},
+                    "founderEmail": {"bsonType": "string"},
+                    "investorEmail": {"bsonType": "string"},
+                    "status": {"bsonType": "string"},  # e.g., "interested", "chatting", "closed"
+                    "createdAt": {"bsonType": "date"},
+                },
+            }
+        },
+    )
+    print("✅ 'InvestorInterests' collection created with schema validation.")
+except Exception:
+    print("ℹ️ 'InvestorInterests' collection already exists.")
+
+
 # ----------------- Create Chats collection with schema validation -----------------
 try:
     db.create_collection(
@@ -154,6 +181,7 @@ except Exception:
 
 chat_collection = db["Chats"]
 users_collection = db["Users"]
+interests_collection=db["InvestorInterests"]
 
 founder_collection = db["FounderDetails"]
 startup_collection = db["StartupDetails"]
@@ -174,9 +202,20 @@ class StartupDetails(BaseModel):
     registeredName: str
     incorporationMonth: str
     incorporationYear: str
-   
     about: str
 
+# --- Pydantic Model ---
+class Interest(BaseModel):
+    startupName: str
+    founderEmail: str
+    investorEmail: str
+    status: str = "pending"
+    createdAt: datetime | None = None
+
+    
+class AcceptInterest(BaseModel):
+    founderEmail: str
+    investorEmail: str
 
 # ----------------- Socket.IO Server -----------------
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
@@ -188,6 +227,12 @@ from firebase_admin import credentials, auth
 cred = credentials.Certificate("aianalyst-61509-firebase-adminsdk-fbsvc-5b4a8376b1.json")  # download from Firebase console
 firebase_admin.initialize_app(cred)
 
+@app.get("/api/founder/interested-investors")
+async def get_interested_investors(founderEmail: str):
+    interests = list(interests_collection.find({"founderEmail": founderEmail}, {"_id": 0}))
+    print(interests)
+    return {"investors": interests}
+    
 def verify_firebase_token(token: str):
     try:
         decoded_token = auth.verify_id_token(token)
@@ -325,6 +370,7 @@ def get_startups():
     startups = list(startup_collection.find({}, {"_id": 0}))
     return startups
 
+
 # ----------------- Socket.IO Events -----------------
 @sio.event
 async def connect(sid, environ):
@@ -333,7 +379,7 @@ async def connect(sid, environ):
 @sio.event
 async def disconnect(sid):
     print(f"Client disconnected: {sid}")
-    
+
 @sio.event
 async def join_room(sid, data):
     """
@@ -415,3 +461,78 @@ Chats collection schema:
     "createdAt": datetime.utcnow()
 }
 """
+
+# @app.post("/api/investor-interest")
+# async def add_investor_interest(request: Request):
+#     data = await request.json()
+#     startup_name = data.get("startupName")
+#     founder_email = data.get("founderEmail")
+#     investor_email = data.get("investorEmail")
+
+#     if not all([startup_name, founder_email, investor_email]):
+#         raise HTTPException(status_code=400, detail="Missing required fields")
+
+#     existing_interest = db["InvestorInterests"].find_one({
+#         "startupName": startup_name,
+#         "investorEmail": investor_email
+#     })
+
+#     if existing_interest:
+#         return {"message": "Already marked as interested"}
+
+#     db["InvestorInterests"].insert_one({
+#         "startupName": startup_name,
+#         "founderEmail": founder_email,
+#         "investorEmail": investor_email,
+#         "status": "interested",
+#         "createdAt": datetime.utcnow()
+#     })
+
+#     return {"message": "Interest recorded successfully"}
+# --- POST: create interest ---
+@app.post("/api/interests")
+def create_interest(interest: Interest):
+    existing = interests_collection.find_one({
+        "startupName": interest.startupName,
+        "founderEmail": interest.founderEmail,
+        "investorEmail": interest.investorEmail
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="Interest already exists")
+
+    interest_data = interest.dict()
+    if not interest_data.get("createdAt"):
+        interest_data["createdAt"] = datetime.utcnow()
+    result=interests_collection.insert_one(interest_data)
+        # Add _id as string for JSON response
+    interest_data["_id"] = str(result.inserted_id)
+
+    return interest_data
+
+
+@app.get("/api/interests")
+def get_interests(investorEmail: str):
+    records = list(interests_collection.find({"investorEmail": investorEmail}, {"_id": 0}))
+    return records  # <-- returns array directly
+
+
+
+# @app.get("/api/founder/interested-investors")
+# async def get_interested_investors(founderEmail: str):
+#     interests = list(db["InvestorInterests"].find({"founderEmail": founderEmail}, {"_id": 0}))
+#     return {"investors": interests}
+
+
+
+
+@app.post("/api/interests/accept")
+def accept_interest(data: AcceptInterest):
+    result = interests_collection.update_one(
+        {"founderEmail": data.founderEmail, "investorEmail": data.investorEmail},
+        {"$set": {"status": "accepted"}}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Interest not found")
+
+    return {"message": "Interest accepted"}

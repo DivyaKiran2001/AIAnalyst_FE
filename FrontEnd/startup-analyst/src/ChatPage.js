@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import io from "socket.io-client";
 
-const socket = io("http://localhost:8000"); // replace with backend URL
+const socket = io("https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io"); // replace with backend URL
 
 const ChatPage = () => {
   const location = useLocation();
@@ -15,9 +15,9 @@ const ChatPage = () => {
     socket.emit("join_room", { participants });
 
     // fetch chat history
-    fetch(`http://localhost:8000/api/chat/?participants=${participants.join("&participants=")}`)
+    fetch(`https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/chat/?participants=${participants.join("&participants=")}`)
       .then(res => res.json())
-      .then(data => setMessages(data.messages));
+      .then(data => setMessages(data.messages || []));
 
     socket.on("receive_message", (msg) => {
       setMessages(prev => [...prev, msg]);

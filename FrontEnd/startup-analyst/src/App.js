@@ -19,6 +19,7 @@ import Signup from "./Signup";
 import FounderDashboard from "./FounderDashboard";
 import InvestorDashboard from "./InvestorDashboard";
 import StartupRegistration from "./StartupRegistration";
+import ChatPage from "./ChatPage";
 function App() {
   return (
     <Routes>

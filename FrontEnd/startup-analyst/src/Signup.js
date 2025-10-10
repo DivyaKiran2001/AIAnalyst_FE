@@ -172,6 +172,7 @@ const AuthPage = () => {
 
       if (isLogin) {
         // LOGIN
+      
         result = await loginInWithEmail(email, password);
 
         if (!result.user.emailVerified) {
@@ -215,10 +216,14 @@ const AuthPage = () => {
       );
 
       const data = await res.json();
+localStorage.setItem("emailId", data.user.email);
+
 
       // Redirect based on role
       if (data.user.role === "founder") navigate("/founder-dashboard");
+      
       else if (data.user.role === "investor") navigate("/investor-dashboard");
+     
 
     } catch (err) {
       console.error(err);
@@ -251,6 +256,9 @@ const AuthPage = () => {
       );
 
       const data = await res.json();
+// ✅ Store user details before navigating
+localStorage.setItem("emailId", data.user.email);
+
 
       // Redirect based on role
       if (data.user.role === "founder") navigate("/founder-dashboard");
