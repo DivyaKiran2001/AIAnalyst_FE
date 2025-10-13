@@ -271,8 +271,23 @@ sessionStorage.setItem("emailId", data.user.email);
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100 bg-primary">
-      <div className="bg-dark p-4 rounded shadow-lg text-white" style={{ width: '100%', maxWidth: '400px' }}>
+    <div className="d-flex justify-content-center align-items-center vh-100"
+    style={{
+      backgroundImage: "url('/images/bg.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+    }}>
+      
+      <div className="bg-light p-4 rounded shadow-lg" style={{ width: '100%', maxWidth: '400px' }}>
+         {/* ✅ Logo Section */}
+        <div className="text-center mb-4">
+          <img
+            src="https://d1y839zkxnw8vi.cloudfront.net/public/LVX_Final_logo/LV_Primary_RAW.svg"
+            alt="LVX Logo"
+            style={{ width: "120px", height: "auto" }}
+          />
+        </div>
         <h2 className="text-center mb-3">{isLogin ? "Log In" : "Create Your Account"}</h2>
         <p className="text-center mb-4">
           {isLogin ? "Welcome back!" : "Sign up to continue to LVX-web."}

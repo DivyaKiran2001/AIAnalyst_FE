@@ -482,7 +482,7 @@ def get_chat_history(participants: List[str] = Query(...)):
     if chat:
         chat["_id"] = str(chat["_id"])
         for msg in chat["messages"]:
-            msg["timestamp"] = msg["timestamp"].isoformat()  # convert datetime -> string
+            msg["timestamp"] = msg["timestamp"].isoformat()+ "Z" # convert datetime -> string
         return chat
     return {"participants": participants_sorted, "messages": []}
 
