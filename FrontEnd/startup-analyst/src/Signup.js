@@ -155,7 +155,7 @@ const AuthPage = () => {
   const location = useLocation();
   // const role = location.state?.role || ""; 
   // passed from previous page
-  const role = location.state?.role || localStorage.getItem("selectedRole") || "";
+  const role = location.state?.role || sessionStorage.getItem("selectedRole") || "";
 
   const navigate = useNavigate();
 
@@ -166,8 +166,8 @@ const AuthPage = () => {
   // -------------------- EMAIL SIGNUP / LOGIN --------------------
   const handleEmailAuth = async () => {
     try {
-      // ✅ Save role in localStorage before doing anything
-      localStorage.setItem("selectedRole", role);
+      // ✅ Save role in sessionStorage before doing anything
+      sessionStorage.setItem("selectedRole", role);
       let result;
 
       if (isLogin) {
@@ -216,7 +216,7 @@ const AuthPage = () => {
       );
 
       const data = await res.json();
-localStorage.setItem("emailId", data.user.email);
+sessionStorage.setItem("emailId", data.user.email);
 
 
       // Redirect based on role
@@ -257,7 +257,7 @@ localStorage.setItem("emailId", data.user.email);
 
       const data = await res.json();
 // ✅ Store user details before navigating
-localStorage.setItem("emailId", data.user.email);
+sessionStorage.setItem("emailId", data.user.email);
 
 
       // Redirect based on role

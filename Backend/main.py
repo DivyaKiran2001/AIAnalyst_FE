@@ -392,50 +392,97 @@ async def join_room(sid, data):
     sio.enter_room(sid, room)
     print(f"{sid} joined room {room}")
 
+# @sio.event
+# async def send_message(sid, data):
+#     """
+#     Receive a message from client and broadcast it to the room.
+#     data: { "senderId": "...", "text": "...", "participants": ["founderEmail", "investorEmail"] }
+#     """
+#     participants = sorted(data["participants"])
+#     room = "_".join(participants)
+#     message = {
+#         "senderId": data["senderId"],
+#         "text": data["text"],
+#         "timestamp": datetime.utcnow().isoformat()
+#     }
+
+#     # Save message to MongoDB
+#     chat_doc = chat_collection.find_one({"participants": participants})
+#     if chat_doc:
+#         chat_collection.update_one(
+#             {"participants": participants},
+#             {"$push": {"messages": message}}
+#         )
+#     else:
+#         chat_collection.insert_one({
+#             "participants": participants,
+#             "messages": [message],
+#             "createdAt": datetime.utcnow().isoformat()
+#         })
+
+#     # Broadcast message to room
+#     await sio.emit("receive_message", message, room=room)
+
 @sio.event
 async def send_message(sid, data):
-    """
-    Receive a message from client and broadcast it to the room.
-    data: { "senderId": "...", "text": "...", "participants": ["founderEmail", "investorEmail"] }
-    """
     participants = sorted(data["participants"])
     room = "_".join(participants)
-    message = {
+
+    # ✅ Store as datetime for MongoDB
+    message_doc = {
         "senderId": data["senderId"],
         "text": data["text"],
-        "timestamp": datetime.utcnow()
+        "timestamp": datetime.utcnow()  # <-- keep as datetime
     }
 
-    # Save message to MongoDB
+    # Save to MongoDB
     chat_doc = chat_collection.find_one({"participants": participants})
     if chat_doc:
         chat_collection.update_one(
             {"participants": participants},
-            {"$push": {"messages": message}}
+            {"$push": {"messages": message_doc}}
         )
     else:
         chat_collection.insert_one({
             "participants": participants,
-            "messages": [message],
+            "messages": [message_doc],
             "createdAt": datetime.utcnow()
         })
 
-    # Broadcast message to room
-    await sio.emit("receive_message", message, room=room)
+    # ✅ Emit to clients (convert datetime to ISO string)
+    message_emit = message_doc.copy()
+    message_emit["timestamp"] = message_emit["timestamp"].isoformat()
+    await sio.emit("receive_message", message_emit, room=room)
+
 
 # ----------------- API to fetch chat history -----------------
+from typing import List
+from fastapi import Query
+
+# @app.get("/api/chat/")
+# def get_chat_history(participants: List[str] = Query(...)):
+#     """
+#     Fetch chat history by participants array
+#     Example: /api/chat/?participants=founder@example.com&participants=investor@example.com
+#     """
+#     participants_sorted = sorted(participants)
+#     chat = chat_collection.find_one({"participants": participants_sorted})
+#     if chat:
+#         chat["_id"] = str(chat["_id"])
+#         for msg in chat["messages"]:
+#             msg["timestamp"] = msg["timestamp"].isoformat()
+#         return chat
+#     return {"participants": participants_sorted, "messages": []}
+
+
 @app.get("/api/chat/")
-def get_chat_history(participants: list[str]):
-    """
-    Fetch chat history by participants array
-    Example: /api/chat/?participants=founder@example.com&participants=investor@example.com
-    """
+def get_chat_history(participants: List[str] = Query(...)):
     participants_sorted = sorted(participants)
     chat = chat_collection.find_one({"participants": participants_sorted})
     if chat:
         chat["_id"] = str(chat["_id"])
         for msg in chat["messages"]:
-            msg["timestamp"] = msg["timestamp"].isoformat()
+            msg["timestamp"] = msg["timestamp"].isoformat()  # convert datetime -> string
         return chat
     return {"participants": participants_sorted, "messages": []}
 

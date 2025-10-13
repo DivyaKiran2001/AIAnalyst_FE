@@ -7,10 +7,10 @@ const InvestorDashboard = () => {
   const [interests, setInterests] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const investorEmail = localStorage.getItem("emailId");
+  const investorEmail = sessionStorage.getItem("emailId");
 
   const handleLogout = () => {
-    localStorage.clear();
+    sessionStorage.clear();
     navigate("/"); // redirect to login/signup
   };
 

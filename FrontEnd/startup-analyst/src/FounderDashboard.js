@@ -15,7 +15,7 @@
 //   };
 
 //   const handleLogout = () => {
-//     localStorage.clear();
+//     sessionStorage.clear();
 //     navigate("/"); // redirect to login/signup page
 //   };
 
@@ -27,9 +27,9 @@
 //         const data = await res.json();
 //         console.log("STTTTT",data)
 //         // Filter startups owned by logged-in founder
-//         const founderEmail = localStorage.getItem("emailId"); // consistent key
+//         const founderEmail = sessionStorage.getItem("emailId"); // consistent key
 //         if (!founderEmail) {
-//           console.warn("⚠️ No founder email found in localStorage.");
+//           console.warn("⚠️ No founder email found in sessionStorage.");
 //           setStartups([]);
 //           return;
 //         }
@@ -47,7 +47,7 @@
 //   }, []);
 
 //   const handleChat = (investorEmail) => {
-//     const founderEmail = localStorage.getItem("userEmail"); // logged-in founder
+//     const founderEmail = sessionStorage.getItem("userEmail"); // logged-in founder
 //     const participants = [founderEmail, investorEmail];
 //     navigate("/chat", { state: { participants } });
 //   };
@@ -133,14 +133,14 @@ export default function FounderDashboard() {
   const [investorRequests, setInvestorRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const founderEmail = localStorage.getItem("emailId");
+  const founderEmail = sessionStorage.getItem("emailId");
 
   const handleNavigation = (path) => {
     navigate(path);
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    sessionStorage.clear();
     navigate("/");
   };
 

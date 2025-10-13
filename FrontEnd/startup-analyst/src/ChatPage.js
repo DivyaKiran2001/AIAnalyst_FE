@@ -2,20 +2,25 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import io from "socket.io-client";
 
-const socket = io("https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io"); // replace with backend URL
+// const socket = io("https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io"); // replace with backend URL
+
+const socket = io("https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io", {
+  transports: ["websocket", "polling"] // ensures polling works
+});
+
 
 const ChatPage = () => {
   const location = useLocation();
   const { participants } = location.state;
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-  const senderId = localStorage.getItem("userEmail");
+  const senderId = sessionStorage.getItem("emailId");
 
   useEffect(() => {
     socket.emit("join_room", { participants });
 
     // fetch chat history
-    fetch(`https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/chat/?participants=${participants.join("&participants=")}`)
+    fetch(`https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/chat/?participants=${participants.map(encodeURIComponent).join("&participants=")}`)
       .then(res => res.json())
       .then(data => setMessages(data.messages || []));
 
