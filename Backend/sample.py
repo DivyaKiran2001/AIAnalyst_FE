@@ -234,8 +234,8 @@ meetings_collection = db["Meetings"]
 user_credentials_collection = db["UserGoogleCredentials"]
 
 # ------------------ Google OAuth Setup ------------------
-GOOGLE_CLIENT_ID = "753168549263-f32qropdqmgkv16dpmes3dm6vad1f5ph.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET = "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"
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = "https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/google/oauth2callback"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
