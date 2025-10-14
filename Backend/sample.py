@@ -1,6 +1,4 @@
-from fastapi import FastAPI, HTTPException
-from fastapi import Request as FastAPIRequest
-from google.auth.transport.requests import Request as GoogleRequest
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 from pymongo import MongoClient
 from google.oauth2 import id_token
@@ -8,21 +6,16 @@ from google.auth.transport import requests
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, EmailStr
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
-from dotenv import load_dotenv
-import os
-from bson import ObjectId
 import smtplib
 import random
 import string
 from email.mime.text import MIMEText
 from datetime import datetime, timedelta
-import socketio
 import json
+import socketio
 from fastapi.responses import RedirectResponse
+
 app = FastAPI()
-load_dotenv()
 origins = [
     "https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io",  # frontend
     "https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io",  # backend
@@ -240,14 +233,11 @@ startup_collection = db["StartupDetails"]
 meetings_collection = db["Meetings"]
 user_credentials_collection = db["UserGoogleCredentials"]
 
-
 # ------------------ Google OAuth Setup ------------------
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-
+GOOGLE_CLIENT_ID = "753168549263-f32qropdqmgkv16dpmes3dm6vad1f5ph.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET = "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"
 REDIRECT_URI = "https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/google/oauth2callback"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
-
 
 from pydantic import BaseModel
 class FounderDetails(BaseModel):
@@ -279,6 +269,7 @@ class Interest(BaseModel):
 class AcceptInterest(BaseModel):
     founderEmail: str
     investorEmail: str
+
 class MeetingRequest(BaseModel):
     startupName: str
     founderEmail: EmailStr
@@ -292,6 +283,7 @@ class RespondMeeting(BaseModel):
 
 class OAuthRequest(BaseModel):
     email: EmailStr
+
 # ----------------- Socket.IO Server -----------------
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 socket_app = socketio.ASGIApp(sio, app)
@@ -301,69 +293,6 @@ from firebase_admin import credentials, auth
 
 cred = credentials.Certificate("aianalyst-61509-firebase-adminsdk-fbsvc-5b4a8376b1.json")  # download from Firebase console
 firebase_admin.initialize_app(cred)
-
-
-# ----------------- Helper Functions -----------------
-def check_investor_interest(founder_email, investor_email):
-    """Check if investor is allowed to request a meeting."""
-    record = interests_collection.find_one({
-        "founderEmail": founder_email,
-        "investorEmail": investor_email,
-        "status": "accepted"
-    })
-    return record is not None
-
-# ------------------ Helper: Check Time Conflict ------------------
-# def check_time_conflict(email, proposed_datetime, duration_hours=1):
-#     start = proposed_datetime
-#     end = proposed_datetime + timedelta(hours=duration_hours)
-#     conflict = meetings_collection.find_one({
-#         "$or": [
-#             {"founderEmail": email},
-#             {"investorEmail": email}
-#         ],
-#         "status": {"$in": ["accepted"]},
-#         "$and": [
-#             {"proposedDateTime": {"$lt": end}},
-#             {"proposedDateTime": {"$gte": start - timedelta(hours=duration_hours)}}
-#         ]
-#     })
-#     return conflict is not None
-
-
-def check_time_conflict(email, proposed_datetime, duration_hours=1):
-    start = proposed_datetime
-    end = proposed_datetime + timedelta(hours=duration_hours)
-
-    conflict = meetings_collection.find_one({
-        "$or": [
-            {"founderEmail": email},
-            {"investorEmail": email}
-        ],
-        "status": {"$in": ["pending", "accepted"]},
-        "$expr": {
-            "$and": [
-                {"$lt": ["$proposedDateTime", end]},   # existing start < new end
-                {"$gt": ["$endTime", start]}           # existing end > new start
-            ]
-        }
-    })
-    return conflict is not None
-
-
-def get_calendar_service(email: str):
-    user_cred = user_credentials_collection.find_one({"email": email})
-    if not user_cred:
-        raise HTTPException(status_code=403, detail=f"Google Calendar not connected for {email}")
-
-    creds = Credentials.from_authorized_user_info(user_cred["credentials"], SCOPES)
-    if creds.expired and creds.refresh_token:
-        creds.refresh(GoogleRequest())
-        user_credentials_collection.update_one(
-            {"email": email},
-            {"$set": {"credentials": json.loads(creds.to_json())}}
-        )
-    return build("calendar", "v3", credentials=creds)
 
 # ------------------ OAuth Flow ------------------
 @app.get("/api/google/authorize")
@@ -392,12 +321,53 @@ def authorize_google(email: str):
     return {"auth_url": authorization_url}
 
 
+# ----------------- Helper Functions -----------------
+def check_investor_interest(founder_email, investor_email):
+    """Check if investor is allowed to request a meeting."""
+    record = interests_collection.find_one({
+        "founderEmail": founder_email,
+        "investorEmail": investor_email,
+        "status": "accepted"
+    })
+    return record is not None
+
+# ------------------ Helper: Check Time Conflict ------------------
+def check_time_conflict(email, proposed_datetime, duration_hours=1):
+    start = proposed_datetime
+    end = proposed_datetime + timedelta(hours=duration_hours)
+    conflict = meetings_collection.find_one({
+        "$or": [
+            {"founderEmail": email},
+            {"investorEmail": email}
+        ],
+        "status": {"$in": ["pending", "accepted"]},
+        "$and": [
+            {"proposedDateTime": {"$lt": end}},
+            {"proposedDateTime": {"$gte": start - timedelta(hours=duration_hours)}}
+        ]
+    })
+    return conflict is not None
+
+def get_calendar_service(email: str):
+    user_cred = user_credentials_collection.find_one({"email": email})
+    if not user_cred:
+        raise HTTPException(status_code=403, detail=f"Google Calendar not connected for {email}")
+
+    creds = Credentials.from_authorized_user_info(user_cred["credentials"], SCOPES)
+    if creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+        user_credentials_collection.update_one(
+            {"email": email},
+            {"$set": {"credentials": json.loads(creds.to_json())}}
+        )
+    return build("calendar", "v3", credentials=creds)
+
+
 @app.get("/api/google/oauth2callback")
 def oauth2callback(code: str, state: str):
     """Callback from Google with tokens"""
     from google_auth_oauthlib.flow import Flow
     try :
-        email, role = state.split("|") 
         flow = Flow.from_client_config(
             {
                 "web": {
@@ -419,28 +389,104 @@ def oauth2callback(code: str, state: str):
             {"$set": {"credentials": json.loads(creds.to_json())}},
             upsert=True
         )
-        #return RedirectResponse(url=f"https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/investor-dashboard?calendarConnected=true")
-        # Redirect based on role
-        if role == "founder":
-            dashboard_url = "https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/founder-dashboard?calendarConnected=true"
-        else:
-            dashboard_url = "https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/investor-dashboard?calendarConnected=true"
-
-        return RedirectResponse(url=dashboard_url)
+        return RedirectResponse(url=f"https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/investor-dashboard?calendarConnected=true")
     except Exception as e:
         print("❌ OAuth Callback Error:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/google/is_connected")
-def is_connected(email: str):
-    user = user_credentials_collection.find_one({"email": email})
-    return {"connected": bool(user)}
+# ----------------- API Endpoints -----------------
+# ------------------ Create Meeting ------------------
+@app.post("/api/meetings")
+def create_meeting(meeting: MeetingRequest):
+    if not check_investor_interest(meeting.founderEmail, meeting.investorEmail):
+        raise HTTPException(status_code=403, detail="Investor not allowed to request meeting")
 
-@app.get("/api/founder/interested-investors")
-async def get_interested_investors(founderEmail: str):
-    interests = list(interests_collection.find({"founderEmail": founderEmail}, {"_id": 0}))
-    print(interests)
-    return {"investors": interests}
+    if check_time_conflict(meeting.founderEmail, meeting.proposedDateTime) or \
+       check_time_conflict(meeting.investorEmail, meeting.proposedDateTime):
+        raise HTTPException(status_code=409, detail="Meeting time conflicts with another meeting")
+
+    meeting_doc = meeting.dict()
+    meeting_doc["status"] = "pending"
+    meeting_doc["createdAt"] = datetime.utcnow()
+    result = meetings_collection.insert_one(meeting_doc)
+    meeting_doc["_id"] = str(result.inserted_id)
+    return meeting_doc
+
+
+# ------------------ Accept / Decline Meeting ------------------
+@app.post("/api/meetings/respond")
+def respond_meeting(response: RespondMeeting):
+    meeting = meetings_collection.find_one({"_id": ObjectId(response.meetingId)})
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    if response.action == "accept":
+        if check_time_conflict(meeting["founderEmail"], meeting["proposedDateTime"]) or \
+           check_time_conflict(meeting["investorEmail"], meeting["proposedDateTime"]):
+            raise HTTPException(status_code=409, detail="Meeting time conflicts with another meeting")
+
+        # Create Google Meet event in both users' calendars
+        founder_service = get_calendar_service(meeting["founderEmail"])
+        investor_service = get_calendar_service(meeting["investorEmail"])
+
+        event_body = {
+            'summary': f"Startup Meeting - {meeting['startupName']}",
+            'start': {'dateTime': meeting['proposedDateTime'].isoformat(), 'timeZone': 'Asia/Kolkata'},
+            'end': {'dateTime': (meeting['proposedDateTime'] + timedelta(hours=1)).isoformat(), 'timeZone': 'Asia/Kolkata'},
+            'attendees': [
+                {'email': meeting['founderEmail']},
+                {'email': meeting['investorEmail']}
+            ],
+            'conferenceData': {
+                'createRequest': {
+                    'requestId': str(response.meetingId),
+                    'conferenceSolutionKey': {'type': 'hangoutsMeet'}
+                }
+            }
+        }
+
+        created_event = founder_service.events().insert(
+            calendarId="primary", body=event_body, conferenceDataVersion=1
+        ).execute()
+
+        hangout_link = created_event.get('hangoutLink')
+
+        # Add to investor's calendar
+        investor_service.events().insert(
+            calendarId="primary", body=event_body, conferenceDataVersion=1
+        ).execute()
+
+        meetings_collection.update_one(
+            {"_id": ObjectId(response.meetingId)},
+            {"$set": {"status": "accepted", "hangoutLink": hangout_link}}
+        )
+        return {"message": "Meeting accepted", "hangoutLink": hangout_link}
+
+    elif response.action == "decline":
+        meetings_collection.update_one(
+            {"_id": ObjectId(response.meetingId)},
+            {"$set": {"status": "declined"}}
+        )
+        return {"message": "Meeting declined"}
+
+    raise HTTPException(status_code=400, detail="Invalid action")
+
+
+# ------------------ Fetch Meetings ------------------
+@app.get("/api/meetings/founder/{founder_email}")
+def get_founder_meetings(founder_email: str):
+    meetings = list(meetings_collection.find({"founderEmail": founder_email}))
+    for m in meetings:
+        m["_id"] = str(m["_id"])
+    return meetings
+
+
+@app.get("/api/meetings/investor/{investor_email}")
+def get_investor_meetings(investor_email: str):
+    meetings = list(meetings_collection.find({"investorEmail": investor_email}))
+    for m in meetings:
+        m["_id"] = str(m["_id"])
+    return meetings
     
 def verify_firebase_token(token: str):
     try:
@@ -457,7 +503,7 @@ def verify_firebase_token(token: str):
 # Auth Endpoint
 # -------------------------
 @app.post("/api/auth")
-async def auth_user(request: FastAPIRequest):
+async def auth_user(request: Request):
     auth_header = request.headers.get("Authorization")
     print(auth_header)
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -498,7 +544,7 @@ async def auth_user(request: FastAPIRequest):
     return {"status": "success", "user": {"email": email, "role": role}}
 
 @app.post("/api/founder-details")
-async def add_founder_details(request: FastAPIRequest, data: FounderDetails):
+async def add_founder_details(request: Request, data: FounderDetails):
     """Store founder profile details"""
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -530,7 +576,7 @@ def get_founder(email: str):
     return founder
 
 @app.post("/api/startup-details")
-async def add_startup_details(request: FastAPIRequest, data: StartupDetails):
+async def add_startup_details(request: Request, data: StartupDetails):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Firebase token")
@@ -558,7 +604,7 @@ async def add_startup_details(request: FastAPIRequest, data: StartupDetails):
 # Get Startup Details by Email
 # -------------------------
 @app.get("/api/startup-details")
-def get_startup_details(request: FastAPIRequest):
+def get_startup_details(request: Request):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Firebase token")
@@ -579,162 +625,7 @@ def get_startups():
     startups = list(startup_collection.find({}, {"_id": 0}))
     return startups
 
-# ------------------ Create Meeting ------------------
-@app.post("/api/meetings")
-def create_meeting(meeting: MeetingRequest):
-    if not check_investor_interest(meeting.founderEmail, meeting.investorEmail):
-        raise HTTPException(status_code=403, detail="Investor not allowed to request meeting")
 
-    if check_time_conflict(meeting.founderEmail, meeting.proposedDateTime) or \
-       check_time_conflict(meeting.investorEmail, meeting.proposedDateTime):
-        raise HTTPException(status_code=409, detail="Meeting time conflicts with another meeting")
-
-    meeting_doc = meeting.dict()
-    meeting_doc["status"] = "pending"
-    meeting_doc["createdAt"] = datetime.utcnow()
-    result = meetings_collection.insert_one(meeting_doc)
-    meeting_doc["_id"] = str(result.inserted_id)
-    return meeting_doc
-
-
-# ------------------ Accept / Decline Meeting ------------------
-# @app.post("/api/meetings/respond",response_model=None)
-# def respond_meeting(response: RespondMeeting):
-#     meeting = meetings_collection.find_one({"_id": ObjectId(response.meetingId)})
-#     if not meeting:
-#         raise HTTPException(status_code=404, detail="Meeting not found")
-
-#     if response.action == "accept":
-#         if check_time_conflict(meeting["founderEmail"], meeting["proposedDateTime"]) or \
-#            check_time_conflict(meeting["investorEmail"], meeting["proposedDateTime"]):
-#             raise HTTPException(status_code=409, detail="Meeting time conflicts with another meeting")
-
-#         # Create Google Meet event in both users' calendars
-#         founder_service = get_calendar_service(meeting["founderEmail"])
-#         investor_service = get_calendar_service(meeting["investorEmail"])
-
-#         event_body = {
-#             'summary': f"Startup Meeting - {meeting['startupName']}",
-#             'start': {'dateTime': meeting['proposedDateTime'].isoformat(), 'timeZone': 'Asia/Kolkata'},
-#             'end': {'dateTime': (meeting['proposedDateTime'] + timedelta(hours=1)).isoformat(), 'timeZone': 'Asia/Kolkata'},
-#             'attendees': [
-#                 {'email': meeting['founderEmail']},
-#                 {'email': meeting['investorEmail']}
-#             ],
-#             'conferenceData': {
-#                 'createRequest': {
-#                     'requestId': str(response.meetingId),
-#                     'conferenceSolutionKey': {'type': 'hangoutsMeet'}
-#                 }
-#             }
-#         }
-
-#         created_event = founder_service.events().insert(
-#             calendarId="primary", body=event_body, conferenceDataVersion=1
-#         ).execute()
-
-#         hangout_link = created_event.get('hangoutLink')
-
-#         # Add to investor's calendar
-#         investor_service.events().insert(
-#             calendarId="primary", body=event_body, conferenceDataVersion=1
-#         ).execute()
-
-#         meetings_collection.update_one(
-#             {"_id": ObjectId(response.meetingId)},
-#             {"$set": {"status": "accepted", "hangoutLink": hangout_link}}
-#         )
-#         return {"message": "Meeting accepted", "hangoutLink": hangout_link}
-
-#     elif response.action == "decline":
-#         meetings_collection.update_one(
-#             {"_id": ObjectId(response.meetingId)},
-#             {"$set": {"status": "declined"}}
-#         )
-#         return {"message": "Meeting declined"}
-
-#     raise HTTPException(status_code=400, detail="Invalid action")
-
-@app.post("/api/meetings/respond")
-def respond_meeting(response: RespondMeeting):
-    # Fetch the meeting
-    meeting = meetings_collection.find_one({"_id": ObjectId(response.meetingId)})
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
-
-    if response.action == "accept":
-        # Check time conflicts
-        if check_time_conflict(meeting["founderEmail"], meeting["proposedDateTime"]) or \
-           check_time_conflict(meeting["investorEmail"], meeting["proposedDateTime"]):
-            raise HTTPException(status_code=409, detail="Meeting time conflicts with another meeting")
-
-        # Get calendar service for founder only (organizer)
-        founder_service = get_calendar_service(meeting["founderEmail"])
-
-        # Prepare event body
-        event_body = {
-            'summary': f"Startup Meeting - {meeting['startupName']}",
-            'start': {
-                'dateTime': meeting['proposedDateTime'].isoformat(),
-                'timeZone': 'Asia/Kolkata'
-            },
-            'end': {
-                'dateTime': (meeting['proposedDateTime'] + timedelta(hours=1)).isoformat(),
-                'timeZone': 'Asia/Kolkata'
-            },
-            'attendees': [
-                {'email': meeting['investorEmail']}  # only invite investor
-            ],
-            'conferenceData': {
-                'createRequest': {
-                    'requestId': str(response.meetingId),
-                    'conferenceSolutionKey': {'type': 'hangoutsMeet'}
-                }
-            }
-        }
-
-        # Insert event in founder's calendar
-        created_event = founder_service.events().insert(
-            calendarId="primary",
-            body=event_body,
-            conferenceDataVersion=1,
-            sendUpdates="all"  # sends invites to attendee
-        ).execute()
-
-        hangout_link = created_event.get('hangoutLink')
-
-        # Update MongoDB meeting
-        meetings_collection.update_one(
-            {"_id": ObjectId(response.meetingId)},
-            {"$set": {"status": "accepted", "hangoutLink": hangout_link}}
-        )
-
-        return {"message": "Meeting accepted", "hangoutLink": hangout_link}
-
-    elif response.action == "decline":
-        meetings_collection.update_one(
-            {"_id": ObjectId(response.meetingId)},
-            {"$set": {"status": "declined"}}
-        )
-        return {"message": "Meeting declined"}
-
-    else:
-        raise HTTPException(status_code=400, detail="Invalid action")
-
-# ------------------ Fetch Meetings ------------------
-@app.get("/api/meetings/founder/{founder_email}")
-def get_founder_meetings(founder_email: str):
-    meetings = list(meetings_collection.find({"founderEmail": founder_email}))
-    for m in meetings:
-        m["_id"] = str(m["_id"])
-    return meetings
-
-@app.get("/api/meetings/investor/{investor_email}")
-def get_investor_meetings(investor_email: str):
-    meetings = list(meetings_collection.find({"investorEmail": investor_email}))
-    for m in meetings:
-        m["_id"] = str(m["_id"])
-    return meetings
 # ----------------- Socket.IO Events -----------------
 @sio.event
 async def connect(sid, environ):
@@ -756,6 +647,12 @@ async def join_room(sid, data):
     sio.enter_room(sid, room)
     print(f"{sid} joined room {room}")
 
+@app.get("/api/founder/interested-investors")
+async def get_interested_investors(founderEmail: str):
+    interests = list(interests_collection.find({"founderEmail": founderEmail}, {"_id": 0}))
+    print(interests)
+    return {"investors": interests}
+    
 @sio.event
 async def send_message(sid, data):
     participants = sorted(data["participants"])
@@ -792,6 +689,21 @@ async def send_message(sid, data):
 from typing import List
 from fastapi import Query
 
+# @app.get("/api/chat/")
+# def get_chat_history(participants: List[str] = Query(...)):
+#     """
+#     Fetch chat history by participants array
+#     Example: /api/chat/?participants=founder@example.com&participants=investor@example.com
+#     """
+#     participants_sorted = sorted(participants)
+#     chat = chat_collection.find_one({"participants": participants_sorted})
+#     if chat:
+#         chat["_id"] = str(chat["_id"])
+#         for msg in chat["messages"]:
+#             msg["timestamp"] = msg["timestamp"].isoformat()
+#         return chat
+#     return {"participants": participants_sorted, "messages": []}
+
 
 @app.get("/api/chat/")
 def get_chat_history(participants: List[str] = Query(...)):
@@ -827,7 +739,6 @@ Chats collection schema:
 }
 """
 
-# --- POST: create interest ---
 @app.post("/api/interests")
 def create_interest(interest: Interest):
     existing = interests_collection.find_one({
@@ -852,9 +763,6 @@ def create_interest(interest: Interest):
 def get_interests(investorEmail: str):
     records = list(interests_collection.find({"investorEmail": investorEmail}, {"_id": 0}))
     return records  # <-- returns array directly
-
-
-
 
 @app.post("/api/interests/accept")
 def accept_interest(data: AcceptInterest):
