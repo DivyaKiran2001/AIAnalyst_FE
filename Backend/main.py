@@ -11,15 +11,17 @@ from pydantic import BaseModel, EmailStr
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from dotenv import load_dotenv
+from pymongo.errors import CollectionInvalid
 import os
 from bson import ObjectId
 import smtplib
 import random
 import string
 from email.mime.text import MIMEText
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta,time
 import socketio
 import json
+import pytz
 from fastapi.responses import RedirectResponse
 app = FastAPI()
 load_dotenv()
@@ -230,7 +232,29 @@ try:
 except Exception:
     print("ℹ️ 'UserGoogleCredentials' collection already exists.")
 
+try:
+    db.create_collection(
+        "FounderSlots",
+        validator={
+            "$jsonSchema": {
+                "bsonType": "object",
+                "required": ["founderEmail", "date", "startTime", "endTime", "status", "createdAt"],
+                "properties": {
+                    "founderEmail": {"bsonType": "string"},
+                    "date": {"bsonType": "string"},  # YYYY-MM-DD
+                    "startTime": {"bsonType": "date"},
+                    "endTime": {"bsonType": "date"},
+                    "status": {"bsonType": "string"},  # "available", "booked"
+                    "createdAt": {"bsonType": "date"}
+                },
+            }
+        },
+    )
+    print("✅ 'FounderSlots' collection created with schema validation.")
+except CollectionInvalid:
+    print("ℹ️ 'FounderSlots' collection already exists.")
 
+founder_slots_collection = db["FounderSlots"]
 chat_collection = db["Chats"]
 users_collection = db["Users"]
 interests_collection=db["InvestorInterests"]
@@ -331,11 +355,11 @@ def check_investor_interest(founder_email, investor_email):
 #     return conflict is not None
 
 
-def check_time_conflict(email, proposed_datetime, duration_hours=1):
+def check_time_conflict(email, proposed_datetime, duration_hours=30):
     start = proposed_datetime
     end = proposed_datetime + timedelta(hours=duration_hours)
 
-    conflict = meetings_collection.find_one({
+    meeting_conflict = meetings_collection.find_one({
         "$or": [
             {"founderEmail": email},
             {"investorEmail": email}
@@ -348,7 +372,161 @@ def check_time_conflict(email, proposed_datetime, duration_hours=1):
             ]
         }
     })
-    return conflict is not None
+    # 2️⃣ Check conflicts with booked founder slots
+    slot_conflict = founder_slots_collection.find_one({
+        "founderEmail": email,
+        "status": "booked",
+        "$expr": {
+            "$and": [
+                {"$lt": ["$startTime", end]},
+                {"$gt": ["$endTime", start]}
+            ]
+        }
+    })
+
+    return meeting_conflict is not None or slot_conflict is not None
+
+
+# ------------------ Generate and Store Slots ------------------
+# @app.post("/api/founder/slots")
+# def generate_and_store_slots(founderEmail: str, date: str):
+#     """
+#     Generate 30-min founder slots between 9 AM - 6 PM
+#     excluding 1 PM - 2 PM, and store in MongoDB.
+#     """
+#     try:
+#         base_date = datetime.strptime(date, "%Y-%m-%d")
+#     except ValueError:
+#         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+
+#     # Check if slots already exist
+#     existing = list(founder_slots_collection.find({"founderEmail": founderEmail, "date": date}))
+#     if existing:
+#         return {"message": "Slots already exist for this founder on this date", "slots": existing}
+
+#     ist = pytz.timezone("Asia/Kolkata")
+#     start_time = datetime.combine(base_date, time(9, 0, tzinfo=ist))
+#     end_time = datetime.combine(base_date, time(18, 0, tzinfo=ist))
+#     lunch_start = datetime.combine(base_date, time(13, 0, tzinfo=ist))
+#     lunch_end = datetime.combine(base_date, time(14, 0, tzinfo=ist))
+
+#     slot_duration = timedelta(minutes=30)
+#     slots_to_insert = []
+#     current = start_time
+
+#     while current < end_time:
+#         next_slot = current + slot_duration
+
+#         # Skip lunch hour slots
+#         if next_slot <= lunch_start or current >= lunch_end:
+#             slot_doc = {
+#                 "founderEmail": founderEmail,
+#                 "date": date,
+#                 "startTime": current,
+#                 "endTime": next_slot,
+#                 "status": "available",
+#                 "createdAt": datetime.utcnow()
+#             }
+#             slots_to_insert.append(slot_doc)
+
+#         current = next_slot
+
+#     if not slots_to_insert:
+#         raise HTTPException(status_code=400, detail="No valid slots generated.")
+
+#     # Insert slots in MongoDB
+#     founder_slots_collection.insert_many(slots_to_insert)
+
+#     return {"message": "✅ Slots generated and stored successfully.", "totalSlots": len(slots_to_insert)}
+
+# ------------------ Get Available Slots ------------------
+# @app.get("/api/founder/slots")
+# def get_slots(founderEmail: str, date: str):
+#     """Retrieve all available slots for a founder on a specific date."""
+#     slots = list(founder_slots_collection.find(
+#         {"founderEmail": founderEmail, "date": date},
+#         {"_id": 0}
+#     ))
+#     if not slots:
+#         raise HTTPException(status_code=404, detail="No slots found for this date.")
+#     return {"date": date, "slots": slots}
+
+# ------------------ Get Available Slots (Auto-Generate if Not Exists & Only Available) ------------------
+@app.get("/api/founder/slots")
+def get_slots(founderEmail: str, date: str):
+    """
+    Retrieve all available slots for a founder on a specific date.
+    If slots do not exist yet, generate them automatically.
+    Only return slots with status 'available'.
+    """
+    # Parse date
+    try:
+        base_date = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+
+    # Fetch existing available slots
+    available_slots = list(founder_slots_collection.find(
+        {"founderEmail": founderEmail, "date": date, "status": "available"}
+    ))
+
+    if available_slots:
+        # Convert ObjectId and datetime to string for JSON
+        for slot in available_slots:
+            slot["_id"] = str(slot["_id"])
+            slot["startTime"] = slot["startTime"].astimezone(pytz.timezone("Asia/Kolkata")).isoformat()
+            slot["endTime"] = slot["endTime"].astimezone(pytz.timezone("Asia/Kolkata")).isoformat()
+            slot["createdAt"] = slot["createdAt"].isoformat()
+        return {"date": date, "slots": available_slots}
+
+    # Check if any slots exist at all
+    existing_slots = list(founder_slots_collection.find(
+        {"founderEmail": founderEmail, "date": date}
+    ))
+    if existing_slots:
+        # Slots exist but none are available
+        return {"date": date, "slots": []}
+
+    # No slots exist, generate automatically
+    ist = pytz.timezone("Asia/Kolkata")
+    start_time = ist.localize(datetime.combine(base_date, time(9, 0)))
+    end_time = ist.localize(datetime.combine(base_date, time(18, 0)))
+    lunch_start = ist.localize(datetime.combine(base_date, time(13, 0)))
+    lunch_end = ist.localize(datetime.combine(base_date, time(14, 0)))
+
+    slot_duration = timedelta(minutes=30)
+    slots_to_insert = []
+    current = start_time
+
+    while current < end_time:
+        next_slot = current + slot_duration
+        # Skip lunch
+        if next_slot <= lunch_start or current >= lunch_end:
+            slot_doc = {
+                "founderEmail": founderEmail,
+                "date": date,
+                "startTime": current,
+                "endTime": next_slot,
+                "status": "available",
+                "createdAt": datetime.utcnow()
+            }
+            slots_to_insert.append(slot_doc)
+        current = next_slot
+
+    if not slots_to_insert:
+        raise HTTPException(status_code=400, detail="No valid slots generated.")
+
+    # Insert slots in MongoDB
+    result = founder_slots_collection.insert_many(slots_to_insert)
+
+    # Convert inserted slots to JSON-friendly format
+    for slot, oid in zip(slots_to_insert, result.inserted_ids):
+        slot["_id"] = str(oid)
+        slot["startTime"] = slot["startTime"].isoformat()
+        slot["endTime"] = slot["endTime"].isoformat()
+        slot["createdAt"] = slot["createdAt"].isoformat()
+
+    return {"date": date, "slots": slots_to_insert}
 
 
 def get_calendar_service(email: str):
@@ -589,12 +767,45 @@ def create_meeting(meeting: MeetingRequest):
        check_time_conflict(meeting.investorEmail, meeting.proposedDateTime):
         raise HTTPException(status_code=409, detail="Meeting time conflicts with another meeting")
 
-    meeting_doc = meeting.dict()
-    meeting_doc["status"] = "pending"
-    meeting_doc["createdAt"] = datetime.utcnow()
+    meeting_end = meeting.proposedDateTime + timedelta(minutes=30)
+
+    meeting_doc = {
+        "startupName": meeting.startupName,
+        "founderEmail": meeting.founderEmail,
+        "investorEmail": meeting.investorEmail,
+        "proposedDateTime": meeting.proposedDateTime,
+        "endTime": meeting_end,
+        "status": "pending",
+        "createdAt": datetime.utcnow()
+    }
+
+    # Insert into Meetings collection
     result = meetings_collection.insert_one(meeting_doc)
-    meeting_doc["_id"] = str(result.inserted_id)
-    return meeting_doc
+    meeting_id = result.inserted_id
+
+    # Update FounderSlots — mark slot as "booked"
+    slot_update = founder_slots_collection.update_one(
+        {
+            "founderEmail": meeting.founderEmail,
+            "startTime": {"$lte": meeting.proposedDateTime},
+            "endTime": {"$gt": meeting.proposedDateTime},
+            "status": "available"
+        },
+        {"$set": {"status": "booked"}}
+    )
+
+     # Debug info (optional)
+    if slot_update.modified_count == 0:
+        print(f"⚠️ No matching available slot found for {meeting.founderEmail} at {meeting.proposedDateTime}")
+
+    meeting_doc["_id"] = str(meeting_id)
+    return {"message": "✅ Meeting created successfully", "meeting": meeting_doc}
+    # meeting_doc = meeting.dict()
+    # meeting_doc["status"] = "pending"
+    # meeting_doc["createdAt"] = datetime.utcnow()
+    # result = meetings_collection.insert_one(meeting_doc)
+    # meeting_doc["_id"] = str(result.inserted_id)
+    # return meeting_doc
 
 
 # ------------------ Accept / Decline Meeting ------------------
@@ -671,20 +882,21 @@ def respond_meeting(response: RespondMeeting):
         # Get calendar service for founder only (organizer)
         founder_service = get_calendar_service(meeting["founderEmail"])
 
-        # Prepare event body
+         # Set 30-min duration
+        start_time = meeting["proposedDateTime"]
+        end_time = meeting["proposedDateTime"] + timedelta(minutes=30)
+        # Prepare Google Calendar event
         event_body = {
             'summary': f"Startup Meeting - {meeting['startupName']}",
             'start': {
-                'dateTime': meeting['proposedDateTime'].isoformat(),
+                'dateTime': start_time.isoformat(),
                 'timeZone': 'Asia/Kolkata'
             },
             'end': {
-                'dateTime': (meeting['proposedDateTime'] + timedelta(hours=1)).isoformat(),
+                'dateTime': end_time.isoformat(),
                 'timeZone': 'Asia/Kolkata'
             },
-            'attendees': [
-                {'email': meeting['investorEmail']}  # only invite investor
-            ],
+            'attendees': [{'email': meeting['investorEmail']}],
             'conferenceData': {
                 'createRequest': {
                     'requestId': str(response.meetingId),
@@ -693,33 +905,103 @@ def respond_meeting(response: RespondMeeting):
             }
         }
 
-        # Insert event in founder's calendar
+        # Insert event in founder's Google Calendar
         created_event = founder_service.events().insert(
             calendarId="primary",
             body=event_body,
             conferenceDataVersion=1,
-            sendUpdates="all"  # sends invites to attendee
+            sendUpdates="all"
         ).execute()
 
         hangout_link = created_event.get('hangoutLink')
 
-        # Update MongoDB meeting
+        # Update Meetings table
         meetings_collection.update_one(
             {"_id": ObjectId(response.meetingId)},
-            {"$set": {"status": "accepted", "hangoutLink": hangout_link}}
+            {"$set": {"status": "accepted", "hangoutLink": hangout_link, "endTime": end_time}}
         )
 
-        return {"message": "Meeting accepted", "hangoutLink": hangout_link}
+        # Update FounderSlots again if needed
+        founder_slots_collection.update_one(
+            {
+                "founderEmail": meeting["founderEmail"],
+                "startTime": {"$lte": start_time},
+                "endTime": {"$gt": start_time}
+            },
+            {"$set": {"status": "booked"}}
+        )
+
+        return {"message": "✅ Meeting accepted and event added to calendar", "hangoutLink": hangout_link}
 
     elif response.action == "decline":
         meetings_collection.update_one(
             {"_id": ObjectId(response.meetingId)},
             {"$set": {"status": "declined"}}
         )
-        return {"message": "Meeting declined"}
+
+        # Free up the slot again
+        founder_slots_collection.update_one(
+            {
+                "founderEmail": meeting["founderEmail"],
+                "startTime": {"$lte": meeting["proposedDateTime"]},
+                "endTime": {"$gt": meeting["proposedDateTime"]}
+            },
+            {"$set": {"status": "available"}}
+        )
+
+        return {"message": "Meeting declined and slot released"}
 
     else:
         raise HTTPException(status_code=400, detail="Invalid action")
+    #     # Prepare event body
+    #     event_body = {
+    #         'summary': f"Startup Meeting - {meeting['startupName']}",
+    #         'start': {
+    #             'dateTime': meeting['proposedDateTime'].isoformat(),
+    #             'timeZone': 'Asia/Kolkata'
+    #         },
+    #         'end': {
+    #             'dateTime': (meeting['proposedDateTime'] + timedelta(hours=1)).isoformat(),
+    #             'timeZone': 'Asia/Kolkata'
+    #         },
+    #         'attendees': [
+    #             {'email': meeting['investorEmail']}  # only invite investor
+    #         ],
+    #         'conferenceData': {
+    #             'createRequest': {
+    #                 'requestId': str(response.meetingId),
+    #                 'conferenceSolutionKey': {'type': 'hangoutsMeet'}
+    #             }
+    #         }
+    #     }
+
+    #     # Insert event in founder's calendar
+    #     created_event = founder_service.events().insert(
+    #         calendarId="primary",
+    #         body=event_body,
+    #         conferenceDataVersion=1,
+    #         sendUpdates="all"  # sends invites to attendee
+    #     ).execute()
+
+    #     hangout_link = created_event.get('hangoutLink')
+
+    #     # Update MongoDB meeting
+    #     meetings_collection.update_one(
+    #         {"_id": ObjectId(response.meetingId)},
+    #         {"$set": {"status": "accepted", "hangoutLink": hangout_link}}
+    #     )
+
+    #     return {"message": "Meeting accepted", "hangoutLink": hangout_link}
+
+    # elif response.action == "decline":
+    #     meetings_collection.update_one(
+    #         {"_id": ObjectId(response.meetingId)},
+    #         {"$set": {"status": "declined"}}
+    #     )
+    #     return {"message": "Meeting declined"}
+
+    # else:
+    #     raise HTTPException(status_code=400, detail="Invalid action")
 
 # ------------------ Fetch Meetings ------------------
 @app.get("/api/meetings/founder/{founder_email}")

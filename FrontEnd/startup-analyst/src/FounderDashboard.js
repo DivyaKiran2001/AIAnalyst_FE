@@ -477,6 +477,7 @@ return (
                     {new Date(m.proposedDateTime).toLocaleString("en-IN", {
                       dateStyle: "medium",
                       timeStyle: "short",
+                      timeZone: "Asia/Kolkata", // force IST
                     })}
                   </p>
                   <p className="mb-2">
