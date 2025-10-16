@@ -24,7 +24,7 @@ const [calendarConnected, setCalendarConnected] = useState(false);
 
   useEffect(() => {
   const checkConnection = async () => {
-    const res = await fetch(`https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/google/is_connected?email=${investorEmail}`);
+    const res = await fetch(`https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/google/is_connected?email=${investorEmail}`);
     const data = await res.json();
     setCalendarConnected(data.connected);
     if (data.connected) {
@@ -38,10 +38,10 @@ useEffect(() => {
   const fetchMeetings = async () => {
     try {
       const res = await fetch(
-        `https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/meetings/investor/${investorEmail}`
+        `https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/meetings/investor/${investorEmail}`
       );
       const data = await res.json();
-      setMeetings(data);
+      setMeetings(data.meetings || []);
     } catch (err) {
       console.error("Error fetching meetings:", err);
     }
@@ -57,7 +57,7 @@ useEffect(() => {
     setLoadingSlots(true);
     try {
       const res = await fetch(
-        `https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/founder/slots?founderEmail=${meetingData.founderEmail}&date=${meetingData.date}`
+        `https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/founder/slots?founderEmail=${meetingData.founderEmail}&date=${meetingData.date}`
       );
       const data = await res.json();
       setAvailableSlots(data.slots.filter((slot) => slot.status === "available"));
@@ -72,7 +72,7 @@ useEffect(() => {
   const handleGrantCalendarAccess = async () => {
     try {
       const res = await fetch(
-        `https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/google/authorize?email=${investorEmail}`
+        `https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/google/authorize?email=${investorEmail}`
       );
       const data = await res.json();
       window.location.href = data.auth_url; // Redirect to Google consent screen
@@ -88,8 +88,8 @@ useEffect(() => {
     const fetchData = async () => {
       try {
         const [startupRes, interestRes] = await Promise.all([
-          fetch("https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/startups"),
-          fetch(`https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/interests?investorEmail=${investorEmail}`)
+          fetch("https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/startups"),
+          fetch(`https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/interests?investorEmail=${investorEmail}`)
         ]);
         const startupData = await startupRes.json();
         const interestData = await interestRes.json();
@@ -109,7 +109,7 @@ useEffect(() => {
    // Express interest
   const handleInterest = async (founderEmail,startupName,investorEmail) => {
     try {
-      const res = await fetch("https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/interests", {
+      const res = await fetch("https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/interests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -183,11 +183,14 @@ const proposedDateTime = new Date(year, month - 1, day, hours, minutes);
       proposedDateTime,
     };
     console.log("DDDDDD",payload)
+    console.log("Raw value:", proposedDateTime);
+console.log("Parsed date:", new Date(proposedDateTime).toISOString());
+
 
     try {
       setSubmitting(true);
       const res = await fetch(
-        `https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/meetings`,
+        `https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/meetings`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -490,7 +493,7 @@ const proposedDateTime = new Date(year, month - 1, day, hours, minutes);
           {meetings.map((m) => (
             <li key={m._id} className="list-group-item">
               <strong>{m.startupName}</strong> — {m.status} <br />
-              <span>{m.proposedDateTime}</span>
+              {/* <span>{m.proposedDateTime}</span> */}
                {new Date(m.proposedDateTime).toLocaleString("en-IN", {
     dateStyle: "medium",
     timeStyle: "short",

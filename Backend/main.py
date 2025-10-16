@@ -26,8 +26,8 @@ from fastapi.responses import RedirectResponse
 app = FastAPI()
 load_dotenv()
 origins = [
-    "https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io",  # frontend
-    "https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io",  # backend
+    "https://3000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev",
+    "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev",
     "http://localhost:3000",
 ]
 app.add_middleware(
@@ -269,7 +269,7 @@ user_credentials_collection = db["UserGoogleCredentials"]
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
-REDIRECT_URI = "https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/google/oauth2callback"
+REDIRECT_URI = "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/google/oauth2callback"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 
@@ -323,7 +323,7 @@ socket_app = socketio.ASGIApp(sio, app)
 import firebase_admin
 from firebase_admin import credentials, auth
 
-cred = credentials.Certificate("aianalyst-61509-firebase-adminsdk-fbsvc-5b4a8376b1.json")  # download from Firebase console
+cred = credentials.Certificate("aianalyst-61509-firebase-adminsdk-fbsvc-d2fbeecd8c.json")  # download from Firebase console
 firebase_admin.initialize_app(cred)
 
 
@@ -1009,14 +1009,26 @@ def get_founder_meetings(founder_email: str):
     meetings = list(meetings_collection.find({"founderEmail": founder_email}))
     for m in meetings:
         m["_id"] = str(m["_id"])
-    return meetings
+        m["proposedDateTime"] = m["proposedDateTime"].astimezone(pytz.UTC).isoformat()
+        m["endTime"] = m["endTime"].astimezone(pytz.UTC).isoformat()
+    
+    return {"meetings": meetings}
+    # for m in meetings:
+    #     m["_id"] = str(m["_id"])
+    # return meetings
 
 @app.get("/api/meetings/investor/{investor_email}")
 def get_investor_meetings(investor_email: str):
     meetings = list(meetings_collection.find({"investorEmail": investor_email}))
     for m in meetings:
         m["_id"] = str(m["_id"])
-    return meetings
+        m["proposedDateTime"] = m["proposedDateTime"].astimezone(pytz.UTC).isoformat()
+        m["endTime"] = m["endTime"].astimezone(pytz.UTC).isoformat()
+    
+    return {"meetings": meetings}
+    # for m in meetings:
+    #     m["_id"] = str(m["_id"])
+    # return meetings
 # ----------------- Socket.IO Events -----------------
 @sio.event
 async def connect(sid, environ):

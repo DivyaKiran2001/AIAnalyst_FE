@@ -186,7 +186,7 @@ const AuthPage = () => {
 
         // Send verification email
         await sendVerificationEmail(result.user, {
-          url: "https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/signup" // redirect after verification
+          url: "https://3000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/signup" // redirect after verification
         });
 
         alert(
@@ -200,7 +200,7 @@ const AuthPage = () => {
       const token = await result.user.getIdToken(true);
 
       const res = await fetch(
-        "https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/auth",
+        "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/auth",
         {
           method: "POST",
           headers: {
@@ -240,7 +240,7 @@ sessionStorage.setItem("emailId", data.user.email);
       const token = await user.getIdToken(true);
 
       const res = await fetch(
-        "https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/auth",
+        "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/auth",
         {
           method: "POST",
           headers: {

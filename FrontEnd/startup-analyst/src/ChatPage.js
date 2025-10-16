@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import io from "socket.io-client";
 
-const socket = io("https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io", {
+const socket = io("https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev", {
   transports: ["websocket", "polling"]
 });
 
@@ -29,7 +29,7 @@ const ChatPage = () => {
 
 
     // Fetch chat history
-    fetch(`https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/chat/?participants=${participants.map(encodeURIComponent).join("&participants=")}`)
+    fetch(`https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/chat/?participants=${participants.map(encodeURIComponent).join("&participants=")}`)
       .then(res => res.json())
       .then(data => setMessages(data.messages || []))
       .catch(err => console.error(err));

@@ -102,7 +102,7 @@ export default function StartupRegistration() {
         referrer: formData.referrer || null
       };
 
-      await axios.post('https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/founder-details', founderPayload, {
+      await axios.post('https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/founder-details', founderPayload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -132,7 +132,7 @@ export default function StartupRegistration() {
 };
 
 await axios.post(
-  'https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/api/startup-details',
+  'https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/startup-details',
   startupData,
   {
     headers: {

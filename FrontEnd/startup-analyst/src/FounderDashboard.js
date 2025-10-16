@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import io from "socket.io-client";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-const BACKEND_URL = "https://8000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io";
+const BACKEND_URL = "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev";
 const socket = io(BACKEND_URL);
 
 export default function FounderDashboard() {
@@ -72,7 +72,7 @@ export default function FounderDashboard() {
       try {
         const res = await fetch(`${BACKEND_URL}/api/meetings/founder/${founderEmail}`);
         const data = await res.json();
-        setMeetings(data);
+        setMeetings(data.meetings || []);
       } catch (err) {
         console.error("Error fetching meetings:", err);
       }
