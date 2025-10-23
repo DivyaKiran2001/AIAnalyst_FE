@@ -22,7 +22,10 @@ from datetime import datetime, timedelta,time
 import socketio
 import json
 import pytz
+from datetime import datetime
 from fastapi.responses import RedirectResponse
+from google_auth_oauthlib.flow import Flow
+
 app = FastAPI()
 load_dotenv()
 origins = [
@@ -269,7 +272,7 @@ user_credentials_collection = db["UserGoogleCredentials"]
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
-REDIRECT_URI = "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/google/oauth2callback"
+REDIRECT_URI = "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rg6rwqiydysl6ocy.cloudworkstations.dev/api/google/oauth2callback"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 
@@ -355,11 +358,44 @@ def check_investor_interest(founder_email, investor_email):
 #     return conflict is not None
 
 
-def check_time_conflict(email, proposed_datetime, duration_hours=30):
-    start = proposed_datetime
-    end = proposed_datetime + timedelta(hours=duration_hours)
+# def check_time_conflict(email, proposed_datetime, duration_minutes=30):
+#     start = proposed_datetime
+#     end = proposed_datetime + timedelta(hours=duration_minutes)
 
-    meeting_conflict = meetings_collection.find_one({
+#     meeting_conflict = meetings_collection.find_one({
+#         "$or": [
+#             {"founderEmail": email},
+#             {"investorEmail": email}
+#         ],
+#         "status": {"$in": ["pending", "accepted"]},
+#         "$expr": {
+#             "$and": [
+#                 {"$lt": ["$proposedDateTime", end]},   # existing start < new end
+#                 {"$gt": ["$endTime", start]}           # existing end > new start
+#             ]
+#         }
+#     })
+#     # 2️⃣ Check conflicts with booked founder slots
+#     # slot_conflict = founder_slots_collection.find_one({
+#     #     "founderEmail": email,
+#     #     "status": "booked",
+#     #     "$expr": {
+#     #         "$and": [
+#     #             {"$lt": ["$startTime", end]},
+#     #             {"$gt": ["$endTime", start]}
+#     #         ]
+#     #     }
+#     # })
+
+#     #return meeting_conflict is not None or slot_conflict is not None
+#     return meeting_conflict is not None 
+
+
+def check_time_conflict(email, proposed_datetime, duration_minutes=30, exclude_meeting_id=None):
+    start = proposed_datetime
+    end = proposed_datetime + timedelta(minutes=duration_minutes)
+
+    query = {
         "$or": [
             {"founderEmail": email},
             {"investorEmail": email}
@@ -367,24 +403,18 @@ def check_time_conflict(email, proposed_datetime, duration_hours=30):
         "status": {"$in": ["pending", "accepted"]},
         "$expr": {
             "$and": [
-                {"$lt": ["$proposedDateTime", end]},   # existing start < new end
-                {"$gt": ["$endTime", start]}           # existing end > new start
-            ]
-        }
-    })
-    # 2️⃣ Check conflicts with booked founder slots
-    slot_conflict = founder_slots_collection.find_one({
-        "founderEmail": email,
-        "status": "booked",
-        "$expr": {
-            "$and": [
-                {"$lt": ["$startTime", end]},
+                {"$lt": ["$proposedDateTime", end]},
                 {"$gt": ["$endTime", start]}
             ]
         }
-    })
+    }
 
-    return meeting_conflict is not None or slot_conflict is not None
+    # 👇 exclude the same meeting being accepted
+    if exclude_meeting_id:
+        query["_id"] = {"$ne": ObjectId(exclude_meeting_id)}
+
+    meeting_conflict = meetings_collection.find_one(query)
+    return meeting_conflict is not None
 
 
 # ------------------ Generate and Store Slots ------------------
@@ -529,25 +559,142 @@ def get_slots(founderEmail: str, date: str):
     return {"date": date, "slots": slots_to_insert}
 
 
-def get_calendar_service(email: str):
-    user_cred = user_credentials_collection.find_one({"email": email})
-    if not user_cred:
-        raise HTTPException(status_code=403, detail=f"Google Calendar not connected for {email}")
+# def get_calendar_service(email: str):
+#     user_cred = user_credentials_collection.find_one({"email": email})
+#     if not user_cred:
+#         raise HTTPException(status_code=403, detail=f"Google Calendar not connected for {email}")
 
-    creds = Credentials.from_authorized_user_info(user_cred["credentials"], SCOPES)
-    if creds.expired and creds.refresh_token:
-        creds.refresh(GoogleRequest())
-        user_credentials_collection.update_one(
-            {"email": email},
-            {"$set": {"credentials": json.loads(creds.to_json())}}
-        )
+#     creds = Credentials.from_authorized_user_info(user_cred["credentials"], SCOPES)
+#     if creds.expired and creds.refresh_token:
+#         creds.refresh(GoogleRequest())
+#         user_credentials_collection.update_one(
+#             {"email": email},
+#             {"$set": {"credentials": json.loads(creds.to_json())}}
+#         )
+#     return build("calendar", "v3", credentials=creds)
+
+
+# def get_calendar_service(email: str):
+#     user_cred = user_credentials_collection.find_one({"email": email})
+#     if not user_cred:
+#         raise HTTPException(status_code=403, detail=f"Google Calendar not connected for {email}")
+
+#     creds_data = user_cred["credentials"]
+
+#     # 👇 Ensure expiry is a string (convert datetime → ISO string)
+#     if isinstance(creds_data.get("expiry"), datetime):
+#         creds_data["expiry"] = creds_data["expiry"].isoformat() + "Z"
+
+#     creds = Credentials.from_authorized_user_info(creds_data, SCOPES)
+
+#     if creds.expired and creds.refresh_token:
+#         creds.refresh(GoogleRequest())
+#         user_credentials_collection.update_one(
+#             {"email": email},
+#             {"$set": {"credentials": json.loads(creds.to_json())}}
+#         )
+
+#     return build("calendar", "v3", credentials=creds)
+
+def get_calendar_service(user_email):
+    creds_data = user_credentials_collection.find_one({"email": user_email})
+    if not creds_data or "credentials" not in creds_data:
+        raise HTTPException(status_code=401, detail=f"Google authorization expired for {user_email}. Please reconnect your calendar.")
+
+    creds_data = creds_data["credentials"]
+
+    # ✅ Convert expiry to string if it's a datetime
+    if isinstance(creds_data.get("expiry"), datetime):
+        creds_data["expiry"] = creds_data["expiry"].isoformat() + "Z"
+
+    creds = Credentials.from_authorized_user_info(creds_data, SCOPES)
+
+    # ✅ Auto-refresh token if expired
+    if creds and creds.expired and creds.refresh_token:
+        try:
+            creds.refresh(Request())
+            user_credentials_collection.update_one(
+                {"email": user_email},
+                {"$set": {"credentials": json.loads(creds.to_json())}}
+            )
+        except Exception as e:
+            raise HTTPException(status_code=401, detail=f"Google authorization expired for {user_email}. Please reconnect your calendar.")
+
     return build("calendar", "v3", credentials=creds)
 
 # ------------------ OAuth Flow ------------------
+# @app.get("/api/google/authorize")
+# def authorize_google(email: str):
+#     """Generate OAuth consent screen URL"""
+#     from google_auth_oauthlib.flow import Flow
+#     flow = Flow.from_client_config(
+#         {
+#             "web": {
+#                 "client_id": GOOGLE_CLIENT_ID,
+#                 "client_secret": GOOGLE_CLIENT_SECRET,
+#                 "redirect_uris": [REDIRECT_URI],
+#                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+#                 "token_uri": "https://oauth2.googleapis.com/token"
+#             }
+#         },
+#         scopes=SCOPES
+#     )
+#     flow.redirect_uri = REDIRECT_URI
+#     authorization_url, state = flow.authorization_url(
+#         access_type="offline",
+#         include_granted_scopes="true",
+#         prompt="consent",
+#         state=email
+#     )
+#     return {"auth_url": authorization_url}
+
+
+# @app.get("/api/google/oauth2callback")
+# def oauth2callback(code: str, state: str):
+#     """Callback from Google with tokens"""
+#     from google_auth_oauthlib.flow import Flow
+#     try :
+#         email, role = state.split("|") 
+#         flow = Flow.from_client_config(
+#             {
+#                 "web": {
+#                     "client_id": GOOGLE_CLIENT_ID,
+#                     "client_secret": GOOGLE_CLIENT_SECRET,
+#                     "redirect_uris": [REDIRECT_URI],
+#                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+#                     "token_uri": "https://oauth2.googleapis.com/token"
+#                 }
+#             },
+#             scopes=SCOPES
+#         )
+#         flow.redirect_uri = REDIRECT_URI
+#         flow.fetch_token(code=code)
+#         creds = flow.credentials
+
+#         user_credentials_collection.update_one(
+#             {"email": state},
+#             {"$set": {"credentials": json.loads(creds.to_json())}},
+#             upsert=True
+#         )
+#         #return RedirectResponse(url=f"https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/investor-dashboard?calendarConnected=true")
+#         # Redirect based on role
+#         if role == "founder":
+#             dashboard_url = "https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/founder-dashboard?calendarConnected=true"
+#         else:
+#             dashboard_url = "https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/investor-dashboard?calendarConnected=true"
+
+#         return RedirectResponse(url=dashboard_url)
+#     except Exception as e:
+#         print("❌ OAuth Callback Error:", e)
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/google/authorize")
 def authorize_google(email: str):
-    """Generate OAuth consent screen URL"""
-    from google_auth_oauthlib.flow import Flow
+    """
+    Redirect user to Google OAuth consent screen.
+    Role is optional and defaults to founder.
+    """
     flow = Flow.from_client_config(
         {
             "web": {
@@ -555,7 +702,7 @@ def authorize_google(email: str):
                 "client_secret": GOOGLE_CLIENT_SECRET,
                 "redirect_uris": [REDIRECT_URI],
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token"
+                "token_uri": "https://oauth2.googleapis.com/token",
             }
         },
         scopes=SCOPES
@@ -567,15 +714,21 @@ def authorize_google(email: str):
         prompt="consent",
         state=email
     )
-    return {"auth_url": authorization_url}
+    print(authorization_url)
+    # ✅ Redirect browser to Google consent screen
+    return RedirectResponse(url=authorization_url)
+    # return {"auth_url": authorization_url}
 
 
 @app.get("/api/google/oauth2callback")
 def oauth2callback(code: str, state: str):
-    """Callback from Google with tokens"""
-    from google_auth_oauthlib.flow import Flow
-    try :
-        email, role = state.split("|") 
+    """
+    Callback from Google with code.
+    Save credentials and redirect user to dashboard.
+    """
+    try:
+        email, role = state.split("|")
+
         flow = Flow.from_client_config(
             {
                 "web": {
@@ -583,7 +736,7 @@ def oauth2callback(code: str, state: str):
                     "client_secret": GOOGLE_CLIENT_SECRET,
                     "redirect_uris": [REDIRECT_URI],
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token"
+                    "token_uri": "https://oauth2.googleapis.com/token",
                 }
             },
             scopes=SCOPES
@@ -592,17 +745,18 @@ def oauth2callback(code: str, state: str):
         flow.fetch_token(code=code)
         creds = flow.credentials
 
+        # Save credentials in MongoDB
         user_credentials_collection.update_one(
-            {"email": state},
+            {"email": email},
             {"$set": {"credentials": json.loads(creds.to_json())}},
             upsert=True
         )
-        #return RedirectResponse(url=f"https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/investor-dashboard?calendarConnected=true")
-        # Redirect based on role
+
+        # Redirect user to appropriate dashboard
         if role == "founder":
-            dashboard_url = "https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/founder-dashboard?calendarConnected=true"
+            dashboard_url = "https://3000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/founder-dashboard?calendarConnected=true"
         else:
-            dashboard_url = "https://3000-divyakiran2-aianalystfe-trzzh46bbrz.ws-us121.gitpod.io/investor-dashboard?calendarConnected=true"
+            dashboard_url = "https://3000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/investor-home?calendarConnected=true"
 
         return RedirectResponse(url=dashboard_url)
     except Exception as e:
@@ -875,8 +1029,8 @@ def respond_meeting(response: RespondMeeting):
 
     if response.action == "accept":
         # Check time conflicts
-        if check_time_conflict(meeting["founderEmail"], meeting["proposedDateTime"]) or \
-           check_time_conflict(meeting["investorEmail"], meeting["proposedDateTime"]):
+        if check_time_conflict(meeting["founderEmail"], meeting["proposedDateTime"], exclude_meeting_id=response.meetingId) or \
+           check_time_conflict(meeting["investorEmail"], meeting["proposedDateTime"], exclude_meeting_id=response.meetingId):
             raise HTTPException(status_code=409, detail="Meeting time conflicts with another meeting")
 
         # Get calendar service for founder only (organizer)

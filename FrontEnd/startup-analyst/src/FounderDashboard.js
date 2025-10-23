@@ -107,6 +107,34 @@ export default function FounderDashboard() {
   };
 
   // ✅ Respond to meeting requests
+  // const handleMeetingResponse = async (meetingId, action) => {
+  //   try {
+  //     const res = await fetch(`${BACKEND_URL}/api/meetings/respond`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ meetingId, action }),
+  //     });
+
+  //     const data = await res.json();
+
+  //     if (res.ok) {
+  //       alert(`Meeting ${action}ed successfully!`);
+  //       setMeetings((prev) =>
+  //         prev.map((m) =>
+  //           m._id === meetingId
+  //             ? { ...m, status: action === "accept" ? "accepted" : "declined", hangoutLink: data.hangoutLink }
+  //             : m
+  //         )
+  //       );
+  //     } else {
+  //       alert(`Error: ${data.detail}`);
+  //     }
+  //   } catch (err) {
+  //     console.error("Error responding to meeting:", err);
+  //   }
+  // };
+
+
   const handleMeetingResponse = async (meetingId, action) => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/meetings/respond`, {
@@ -114,9 +142,9 @@ export default function FounderDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ meetingId, action }),
       });
-
+  
       const data = await res.json();
-
+  
       if (res.ok) {
         alert(`Meeting ${action}ed successfully!`);
         setMeetings((prev) =>
@@ -126,14 +154,30 @@ export default function FounderDashboard() {
               : m
           )
         );
+      } 
+      // Handle expired Google authorization
+      else if (
+        res.status === 401 &&
+        data.detail &&
+        data.detail.includes("Google authorization expired")
+      ) {
+        const connectNow = window.confirm(
+          "Your Google Calendar authorization has expired. Connect again now?"
+        );
+        if (connectNow) {
+          // Redirect the browser to your backend OAuth authorize endpoint
+          const email = sessionStorage.getItem("emailId");
+          window.location.href = `${BACKEND_URL}/api/google/authorize?email=${email}`;
+        }
       } else {
         alert(`Error: ${data.detail}`);
       }
     } catch (err) {
       console.error("Error responding to meeting:", err);
+      alert("Something went wrong. Please try again.");
     }
   };
-
+  
   const handleChat = (investorEmail) => {
     const participants = [founderEmail, investorEmail];
     navigate("/chat", { state: { participants } });

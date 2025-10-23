@@ -20,13 +20,15 @@ import FounderDashboard from "./FounderDashboard";
 import InvestorDashboard from "./InvestorDashboard";
 import StartupRegistration from "./StartupRegistration";
 import ChatPage from "./ChatPage";
+import InvestorHome from "./InvestorHome";
 function App() {
   return (
     <Routes>
       <Route path="/" element={<SignupLP />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/founder-dashboard" element={<FounderDashboard/>}/>
-      <Route path="/investor-dashboard" element={<InvestorDashboard/>}/>
+      <Route path="/investor-home" element={<InvestorHome/>}/>
+      <Route path="/interested-meetings" element={<InvestorDashboard/>}/>
       <Route path="/startup-registration" element={<StartupRegistration />} />
        {/* Chat Route */}
       <Route path="/chat" element={<ChatPage />} />

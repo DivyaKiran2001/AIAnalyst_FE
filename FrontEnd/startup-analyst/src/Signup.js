@@ -222,7 +222,7 @@ sessionStorage.setItem("emailId", data.user.email);
       // Redirect based on role
       if (data.user.role === "founder") navigate("/founder-dashboard");
       
-      else if (data.user.role === "investor") navigate("/investor-dashboard");
+      else if (data.user.role === "investor") navigate("/investor-home");
      
 
     } catch (err) {
@@ -262,7 +262,7 @@ sessionStorage.setItem("emailId", data.user.email);
 
       // Redirect based on role
       if (data.user.role === "founder") navigate("/founder-dashboard");
-      else if (data.user.role === "investor") navigate("/investor-dashboard");
+      else if (data.user.role === "investor") navigate("/investor-home");
 
     } catch (error) {
       console.error(error);
