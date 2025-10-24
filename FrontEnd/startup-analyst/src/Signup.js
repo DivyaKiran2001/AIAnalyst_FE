@@ -220,7 +220,7 @@ sessionStorage.setItem("emailId", data.user.email);
 
 
       // Redirect based on role
-      if (data.user.role === "founder") navigate("/founder-dashboard");
+      if (data.user.role === "founder") navigate("/f-dashboard");
       
       else if (data.user.role === "investor") navigate("/investor-home");
      
@@ -261,7 +261,7 @@ sessionStorage.setItem("emailId", data.user.email);
 
 
       // Redirect based on role
-      if (data.user.role === "founder") navigate("/founder-dashboard");
+      if (data.user.role === "founder") navigate("/f-dashboard");
       else if (data.user.role === "investor") navigate("/investor-home");
 
     } catch (error) {

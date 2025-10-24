@@ -754,7 +754,7 @@ def oauth2callback(code: str, state: str):
 
         # Redirect user to appropriate dashboard
         if role == "founder":
-            dashboard_url = "https://3000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/founder-dashboard?calendarConnected=true"
+            dashboard_url = "https://3000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/f-dashboard?calendarConnected=true"
         else:
             dashboard_url = "https://3000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/investor-home?calendarConnected=true"
 
