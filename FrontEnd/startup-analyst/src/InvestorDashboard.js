@@ -10,58 +10,71 @@ const InvestorDashboard = () => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [loading, setLoading] = useState(true);
-const [calendarConnected, setCalendarConnected] = useState(false);
+  const [calendarConnected, setCalendarConnected] = useState(false);
   const investorEmail = sessionStorage.getItem("emailId");
 
   const [showMeetingForm, setShowMeetingForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [meetingData, setMeetingData] = useState({ founderEmail: "", startupName: "", date: "", time: "" });
+  const [meetingData, setMeetingData] = useState({
+    founderEmail: "",
+    startupName: "",
+    date: "",
+    time: "",
+  });
   const handleLogout = () => {
     sessionStorage.clear();
     navigate("/"); // redirect to login/signup
   };
 
-
-
   useEffect(() => {
-  const checkConnection = async () => {
-    const res = await fetch(`https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/google/is_connected?email=${investorEmail}`);
-    const data = await res.json();
-    setCalendarConnected(data.connected);
-    if (data.connected) {
-      sessionStorage.setItem("calendarConnected", "true");
-    }
-  };
-  checkConnection();
-}, [investorEmail]);
-
-useEffect(() => {
-  const fetchMeetings = async () => {
-    try {
+    const checkConnection = async () => {
+      // const res = await fetch(`http://localhost:8000/api/google/is_connected?email=${investorEmail}`);
       const res = await fetch(
-        `https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/meetings/investor/${investorEmail}`
+        `http://localhost:8000/api/google/is_connected?email=${investorEmail}`
       );
       const data = await res.json();
-      setMeetings(data.meetings || []);
-    } catch (err) {
-      console.error("Error fetching meetings:", err);
-    }
-  };
+      setCalendarConnected(data.connected);
+      if (data.connected) {
+        sessionStorage.setItem("calendarConnected", "true");
+      }
+    };
+    checkConnection();
+  }, [investorEmail]);
 
-  if (investorEmail) fetchMeetings();
-}, [investorEmail]);
+  useEffect(() => {
+    const fetchMeetings = async () => {
+      try {
+        // const res = await fetch(
+        //   `http://localhost:8000/api/meetings/investor/${investorEmail}`
+        // );
+        const res = await fetch(
+          `http://localhost:8000/api/meetings/investor/${investorEmail}`
+        );
+        const data = await res.json();
+        setMeetings(data.meetings || []);
+      } catch (err) {
+        console.error("Error fetching meetings:", err);
+      }
+    };
 
+    if (investorEmail) fetchMeetings();
+  }, [investorEmail]);
 
-// ✅ Fetch Founder Slots (when date changes)
+  // ✅ Fetch Founder Slots (when date changes)
   const fetchAvailableSlots = async () => {
     if (!meetingData.founderEmail || !meetingData.date) return;
     setLoadingSlots(true);
     try {
+      // const res = await fetch(
+      //   `http://localhost:8000/api/founder/slots?founderEmail=${meetingData.founderEmail}&date=${meetingData.date}`
+      // );
       const res = await fetch(
-        `https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/founder/slots?founderEmail=${meetingData.founderEmail}&date=${meetingData.date}`
+        `http://localhost:8000/api/founder/slots?founderEmail=${meetingData.founderEmail}&date=${meetingData.date}`
       );
       const data = await res.json();
-      setAvailableSlots(data.slots.filter((slot) => slot.status === "available"));
+      setAvailableSlots(
+        data.slots.filter((slot) => slot.status === "available")
+      );
     } catch (err) {
       console.error("Error fetching slots:", err);
       setAvailableSlots([]);
@@ -73,7 +86,7 @@ useEffect(() => {
   // const handleGrantCalendarAccess = async () => {
   //   try {
   //     const res = await fetch(
-  //       `https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/google/authorize?email=${investorEmail}`
+  //       `http://localhost:8000/api/google/authorize?email=${investorEmail}`
   //     );
   //     const data = await res.json();
   //     window.location.href = data.auth_url; // Redirect to Google consent screen
@@ -83,14 +96,15 @@ useEffect(() => {
   //   }
   // };
 
-
   // Fetch startups on mount
-    useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const [startupRes, interestRes] = await Promise.all([
-          fetch("https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/startups"),
-          fetch(`https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/interests?investorEmail=${investorEmail}`)
+          fetch("http://localhost:8000/api/startups"),
+          fetch(
+            `http://localhost:8000/api/interests?investorEmail=${investorEmail}`
+          ),
         ]);
         const startupData = await startupRes.json();
         const interestData = await interestRes.json();
@@ -107,17 +121,17 @@ useEffect(() => {
     fetchData();
   }, [investorEmail]);
 
-   // Express interest
-  const handleInterest = async (founderEmail,startupName,investorEmail) => {
+  // Express interest
+  const handleInterest = async (founderEmail, startupName, investorEmail) => {
     try {
-      const res = await fetch("https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/interests", {
+      const res = await fetch("http://localhost:8000/api/interests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           startupName,
           founderEmail,
           investorEmail,
-          status: "pending"
+          status: "pending",
         }),
       });
 
@@ -139,15 +153,15 @@ useEffect(() => {
     navigate("/chat", { state: { participants } });
   };
 
-  
   // Check interest status for each startup
   const getInterestStatus = (founderEmail) => {
     const record = interests.find(
-      (i) => i.founderEmail === founderEmail && i.investorEmail === investorEmail
+      (i) =>
+        i.founderEmail === founderEmail && i.investorEmail === investorEmail
     );
     return record ? record.status : null;
   };
-    // Open Meeting Form
+  // Open Meeting Form
   const openMeetingForm = (founderEmail, startupName) => {
     setMeetingData({ founderEmail, startupName, date: "", time: "" });
     setShowMeetingForm(true);
@@ -160,44 +174,38 @@ useEffect(() => {
       return;
     }
 
-    console.log(date)
-    console.log(time)
-   
+    console.log(date);
+    console.log(time);
+
     const [hoursStr, minutesStr] = time.split(/[:\s]/); // splits "12:30 pm" into ["12", "30", "pm"]
-let hours = parseInt(hoursStr);
-const minutes = parseInt(minutesStr);
-if (time.toLowerCase().includes("pm") && hours < 12) hours += 12;
-if (time.toLowerCase().includes("am") && hours === 12) hours = 0;
+    let hours = parseInt(hoursStr);
+    const minutes = parseInt(minutesStr);
+    if (time.toLowerCase().includes("pm") && hours < 12) hours += 12;
+    if (time.toLowerCase().includes("am") && hours === 12) hours = 0;
 
-const [year, month, day] = date.split("-");
-const proposedDateTime = new Date(year, month - 1, day, hours, minutes);
+    const [year, month, day] = date.split("-");
+    const proposedDateTime = new Date(year, month - 1, day, hours, minutes);
 
-  
     // const proposedDateTime = new Date(`${meetingData.date}T${meetingData.time}:00`);
 
-    
-  //   
-  const payload = {
+    //
+    const payload = {
       founderEmail: meetingData.founderEmail,
       investorEmail,
       startupName: meetingData.startupName,
       proposedDateTime,
     };
-    console.log("DDDDDD",payload)
+    console.log("DDDDDD", payload);
     console.log("Raw value:", proposedDateTime);
-console.log("Parsed date:", new Date(proposedDateTime).toISOString());
-
+    console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 
     try {
       setSubmitting(true);
-      const res = await fetch(
-        `https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/meetings`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(`http://localhost:8000/api/meetings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (!res.ok) {
         const err = await res.json();
@@ -212,13 +220,12 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
     } finally {
       setSubmitting(false);
     }
-
   };
 
   return (
     <>
       <InvestorNavbar />
-  
+
       <div className="container mt-5">
         {/* Header */}
         {/* <div className="d-flex justify-content-between align-items-center mb-4">
@@ -235,7 +242,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
             )}
           </div>
         </div> */}
-  
+
         {/* Main Content: Startups (left) + Meetings (right) */}
         <div className="row">
           {/* Startups List */}
@@ -257,11 +264,13 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
                           {startup.startupName}
                         </h5>
                         <p className="mb-1">
-                          <strong>Registered Name:</strong> {startup.registeredName}
+                          <strong>Registered Name:</strong>{" "}
+                          {startup.registeredName}
                         </p>
                         <p className="mb-1">
                           <strong>Incorporation:</strong>{" "}
-                          {startup.incorporationMonth} {startup.incorporationYear}
+                          {startup.incorporationMonth}{" "}
+                          {startup.incorporationYear}
                         </p>
                         <p className="mb-1">
                           <strong>About:</strong> {startup.about}
@@ -269,7 +278,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
                         <p className="mb-3">
                           <strong>Founder:</strong> {startup.emailId}
                         </p>
-  
+
                         <div className="d-flex flex-wrap gap-2">
                           {status === "accepted" ? (
                             <>
@@ -323,11 +332,14 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
               </div>
             )}
           </div>
-  
+
           {/* Meetings Section */}
           <div className="col-lg-4">
             <div className="card shadow-sm border-0 h-100">
-              <div className="card-body" style={{ maxHeight: "80vh", overflowY: "auto" }}>
+              <div
+                className="card-body"
+                style={{ maxHeight: "80vh", overflowY: "auto" }}
+              >
                 <h5 className="fw-bold text-primary mb-3">
                   Your Scheduled Meetings
                 </h5>
@@ -348,21 +360,40 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
                           {m.startupName}
                         </div>
                         <small className="text-muted">
-                          {new Date(m.proposedDateTime).toLocaleString("en-IN", {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                            timeZone: "Asia/Kolkata",
-                          })}
+                          {new Date(m.proposedDateTime).toLocaleString(
+                            "en-IN",
+                            {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                              timeZone: "Asia/Kolkata",
+                            }
+                          )}
                         </small>
                         <div className="mt-1">
                           <span
                             className={`badge ${
-                              m.status === "declined" ? "bg-danger" : "bg-success"
+                              m.status === "declined"
+                                ? "bg-danger"
+                                : "bg-success"
                             }`}
                           >
                             {m.status}
                           </span>
                         </div>
+                        {m.status === "accepted" && m.hangoutLink && (
+                          <a
+                            href={m.hangoutLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-outline-dark-blue btn-sm mt-3"
+                            style={{
+                              color: "rgb(18,0,94)",
+                              borderColor: "rgb(18,0,94)",
+                            }}
+                          >
+                            Join Meet
+                          </a>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -371,7 +402,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
             </div>
           </div>
         </div>
-  
+
         {/* Meeting Form Modal */}
         {showMeetingForm && (
           <div
@@ -386,7 +417,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
                 <h5 className="text-center mb-3 text-primary fw-bold">
                   Schedule Meeting with {meetingData.startupName}
                 </h5>
-  
+
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Startup Name</label>
                   <input
@@ -396,9 +427,11 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
                     readOnly
                   />
                 </div>
-  
+
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Founder Email</label>
+                  <label className="form-label fw-semibold">
+                    Founder Email
+                  </label>
                   <input
                     type="email"
                     className="form-control"
@@ -406,7 +439,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
                     readOnly
                   />
                 </div>
-  
+
                 <div className="row">
                   <div className="col-md-7 mb-3">
                     <label className="form-label fw-semibold">Date</label>
@@ -435,7 +468,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
                     </button>
                   </div>
                 </div>
-  
+
                 {availableSlots.length > 0 && (
                   <div className="mb-3">
                     <label className="form-label fw-semibold">
@@ -449,7 +482,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
                           minute: "2-digit",
                         });
                         const isSelected = meetingData.time === timeStr;
-  
+
                         return (
                           <div
                             key={i}
@@ -481,7 +514,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
                     </small>
                   </div>
                 )}
-  
+
                 <div className="d-flex justify-content-end mt-3">
                   <button
                     className="btn btn-secondary me-2"
@@ -517,12 +550,12 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
       </div>
     </>
   );
-}  
+};
 
 //   return (
 //     <>
 //       <InvestorNavbar />
-  
+
 //       <div className="container mt-5">
 //         {/* Header */}
 //         <div className="d-flex justify-content-between align-items-center mb-4">
@@ -542,7 +575,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //             </button> */}
 //           </div>
 //         </div>
-  
+
 //         {/* Main Content: Startups + Meetings side-by-side */}
 //         <div className="row">
 //           {/* Startups List */}
@@ -578,7 +611,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //                           <p className="mb-3">
 //                             <strong>Founder:</strong> {startup.emailId}
 //                           </p>
-  
+
 //                           <div className="d-flex flex-wrap gap-2">
 //                             {status === "accepted" ? (
 //                               <>
@@ -636,7 +669,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //               </div>
 //             )}
 //           </div>
-  
+
 //           {/* Meetings Section */}
 //           <div className="col-lg-4">
 //             <div className="card shadow-sm border-0 h-100">
@@ -686,7 +719,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //             </div>
 //           </div>
 //         </div>
-  
+
 //         {/* Meeting Form Modal (no logic changed) */}
 //         {showMeetingForm && (
 //           <div
@@ -701,7 +734,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //                 <h5 className="text-center mb-3 text-primary fw-bold">
 //                   Schedule Meeting with {meetingData.startupName}
 //                 </h5>
-  
+
 //                 <div className="mb-3">
 //                   <label className="form-label fw-semibold">Startup Name</label>
 //                   <input
@@ -711,7 +744,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //                     readOnly
 //                   />
 //                 </div>
-  
+
 //                 <div className="mb-3">
 //                   <label className="form-label fw-semibold">Founder Email</label>
 //                   <input
@@ -721,7 +754,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //                     readOnly
 //                   />
 //                 </div>
-  
+
 //                 <div className="row">
 //                   <div className="col-md-7 mb-3">
 //                     <label className="form-label fw-semibold">Date</label>
@@ -750,7 +783,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //                     </button>
 //                   </div>
 //                 </div>
-  
+
 //                 {availableSlots.length > 0 && (
 //                   <div className="mb-3">
 //                     <label className="form-label fw-semibold">
@@ -764,7 +797,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //                           minute: "2-digit",
 //                         });
 //                         const isSelected = meetingData.time === timeStr;
-  
+
 //                         return (
 //                           <div
 //                             key={i}
@@ -796,7 +829,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //                     </small>
 //                   </div>
 //                 )}
-  
+
 //                 <div className="d-flex justify-content-end mt-3">
 //                   <button
 //                     className="btn btn-secondary me-2"
@@ -832,8 +865,8 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //       </div>
 //     </>
 //   );
-// }  
-  // Render
+// }
+// Render
 //   return (
 //     <><InvestorNavbar /><div className="container mt-5">
 //       {/* Header */}
@@ -849,7 +882,6 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //         </div>
 //       </div>
 
-  
 //       {/* Startups */}
 //       {/* <h4 className="mt-4 mb-3">Startup Opportunities</h4> */}
 //       {loading ? <p>Loading startups...</p> : (
@@ -882,7 +914,6 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //         </div>
 //       )}
 
-     
 //       {/* ---------------- Meeting Form Modal ---------------- */}
 //       {showMeetingForm && (
 //         <div
@@ -940,8 +971,6 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //                   </button>
 //                 </div>
 //               </div>
-
-             
 
 //               {availableSlots.length > 0 && (
 //                 <div className="mb-3">
@@ -1036,8 +1065,5 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
 //     </div></>
 //   );
 // };
-
-
- 
 
 export default InvestorDashboard;

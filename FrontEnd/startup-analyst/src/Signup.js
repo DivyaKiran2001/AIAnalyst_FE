@@ -93,21 +93,21 @@
 
 //         {/* Email Field */}
 //         <div className="mb-3">
-//           <input 
-//             className="form-control" 
-//             type="email" 
-//             placeholder="Email address" 
-//             onChange={(e) => setEmail(e.target.value)} 
+//           <input
+//             className="form-control"
+//             type="email"
+//             placeholder="Email address"
+//             onChange={(e) => setEmail(e.target.value)}
 //           />
 //         </div>
 
 //         {/* Password Field */}
 //         <div className="mb-3">
-//           <input 
-//             className="form-control" 
-//             type="password" 
-//             placeholder="Password" 
-//             onChange={(e) => setPassword(e.target.value)} 
+//           <input
+//             className="form-control"
+//             type="password"
+//             placeholder="Password"
+//             onChange={(e) => setPassword(e.target.value)}
 //           />
 //         </div>
 
@@ -136,8 +136,6 @@
 
 // export default AuthPage;
 
-
-
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -153,9 +151,10 @@ import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 
 const AuthPage = () => {
   const location = useLocation();
-  // const role = location.state?.role || ""; 
+  // const role = location.state?.role || "";
   // passed from previous page
-  const role = location.state?.role || sessionStorage.getItem("selectedRole") || "";
+  const role =
+    location.state?.role || sessionStorage.getItem("selectedRole") || "";
 
   const navigate = useNavigate();
 
@@ -172,21 +171,20 @@ const AuthPage = () => {
 
       if (isLogin) {
         // LOGIN
-      
+
         result = await loginInWithEmail(email, password);
 
         if (!result.user.emailVerified) {
           alert("Please verify your email before logging in.");
           return;
         }
-
       } else {
         // SIGNUP
         result = await signUpWithEmail(email, password);
 
         // Send verification email
         await sendVerificationEmail(result.user, {
-          url: "https://3000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/signup" // redirect after verification
+          url: "https://3000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/signup", // redirect after verification
         });
 
         alert(
@@ -199,32 +197,25 @@ const AuthPage = () => {
 
       const token = await result.user.getIdToken(true);
 
-      const res = await fetch(
-        "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/auth",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            email,
-            password,
-            role,
-          }),
-        }
-      );
+      const res = await fetch("http://localhost:8000/api/auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          role,
+        }),
+      });
 
       const data = await res.json();
-sessionStorage.setItem("emailId", data.user.email);
-
+      sessionStorage.setItem("emailId", data.user.email);
 
       // Redirect based on role
       if (data.user.role === "founder") navigate("/f-dashboard");
-      
       else if (data.user.role === "investor") navigate("/investor-home");
-     
-
     } catch (err) {
       console.error(err);
       alert(err.message);
@@ -234,36 +225,31 @@ sessionStorage.setItem("emailId", data.user.email);
   // -------------------- GOOGLE LOGIN --------------------
   const handleGoogleAuth = async () => {
     try {
-      const result = await signInWithGoogle(auth, );
+      const result = await signInWithGoogle(auth);
       const user = result.user;
 
       const token = await user.getIdToken(true);
 
-      const res = await fetch(
-        "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/auth",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            email: user.email,
-            password: null,
-            role,
-          }),
-        }
-      );
+      const res = await fetch("http://localhost:8000/api/auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          email: user.email,
+          password: null,
+          role,
+        }),
+      });
 
       const data = await res.json();
-// ✅ Store user details before navigating
-sessionStorage.setItem("emailId", data.user.email);
-
+      // ✅ Store user details before navigating
+      sessionStorage.setItem("emailId", data.user.email);
 
       // Redirect based on role
       if (data.user.role === "founder") navigate("/f-dashboard");
       else if (data.user.role === "investor") navigate("/investor-home");
-
     } catch (error) {
       console.error(error);
       alert(error.message);
@@ -271,16 +257,20 @@ sessionStorage.setItem("emailId", data.user.email);
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100"
-    style={{
-      backgroundImage: "url('/images/bg.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      backgroundRepeat: "no-repeat",
-    }}>
-      
-      <div className="bg-light p-4 rounded shadow-lg" style={{ width: '100%', maxWidth: '400px' }}>
-         {/* ✅ Logo Section */}
+    <div
+      className="d-flex justify-content-center align-items-center vh-100"
+      style={{
+        backgroundImage: "url('/images/bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      <div
+        className="bg-light p-4 rounded shadow-lg"
+        style={{ width: "100%", maxWidth: "400px" }}
+      >
+        {/* ✅ Logo Section */}
         <div className="text-center mb-4">
           <img
             src="https://d1y839zkxnw8vi.cloudfront.net/public/LVX_Final_logo/LV_Primary_RAW.svg"
@@ -288,7 +278,9 @@ sessionStorage.setItem("emailId", data.user.email);
             style={{ width: "120px", height: "auto" }}
           />
         </div>
-        <h2 className="text-center mb-3">{isLogin ? "Log In" : "Create Your Account"}</h2>
+        <h2 className="text-center mb-3">
+          {isLogin ? "Log In" : "Create Your Account"}
+        </h2>
         <p className="text-center mb-4">
           {isLogin ? "Welcome back!" : "Sign up to continue to LVX-web."}
         </p>
@@ -330,7 +322,8 @@ sessionStorage.setItem("emailId", data.user.email);
           className="btn btn-lg btn-outline-danger w-100 mb-3"
           onClick={handleGoogleAuth}
         >
-          <FontAwesomeIcon icon={faGoogle} className="me-2" /> Continue with Google
+          <FontAwesomeIcon icon={faGoogle} className="me-2" /> Continue with
+          Google
         </button>
 
         {/* Toggle Login/Signup */}

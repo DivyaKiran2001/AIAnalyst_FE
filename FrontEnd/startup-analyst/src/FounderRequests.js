@@ -3,7 +3,7 @@
 // import "bootstrap/dist/css/bootstrap.min.css";
 // import FounderNavbar from "./FounderNavbar";
 
-// const BACKEND_URL = "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev";
+// const BACKEND_URL = "http://localhost:8000";
 
 // const FounderRequests = () => {
 //   const navigate = useNavigate();
@@ -120,7 +120,8 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import FounderNavbar from "./FounderNavbar";
 import io from "socket.io-client";
 
-const BACKEND_URL = "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev";
+// const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "http://localhost:8000";
 
 const socket = io(BACKEND_URL, { transports: ["websocket", "polling"] });
 
@@ -153,14 +154,18 @@ const FounderRequests = () => {
 
     socket.emit("join_room", { participants });
 
-    fetch(`${BACKEND_URL}/api/chat/?participants=${participants.map(encodeURIComponent).join("&participants=")}`)
-      .then(res => res.json())
-      .then(data => setChatMessages(data.messages || []))
-      .catch(err => console.error(err));
+    fetch(
+      `${BACKEND_URL}/api/chat/?participants=${participants
+        .map(encodeURIComponent)
+        .join("&participants=")}`
+    )
+      .then((res) => res.json())
+      .then((data) => setChatMessages(data.messages || []))
+      .catch((err) => console.error(err));
 
     socket.on("receive_message", (msg) => {
       if (participants.includes(msg.senderId)) {
-        setChatMessages(prev => [...prev, msg]);
+        setChatMessages((prev) => [...prev, msg]);
       }
     });
 
@@ -200,20 +205,35 @@ const FounderRequests = () => {
 
   const sendMessage = () => {
     if (!text.trim() || !selectedInvestor) return;
-    const msg = { senderId: founderEmail, text, timestamp: new Date().toISOString(), participants: [founderEmail, selectedInvestor] };
+    const msg = {
+      senderId: founderEmail,
+      text,
+      timestamp: new Date().toISOString(),
+      participants: [founderEmail, selectedInvestor],
+    };
     socket.emit("send_message", msg);
-    setChatMessages(prev => [...prev, msg]);
+    setChatMessages((prev) => [...prev, msg]);
     setText("");
   };
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString("en-US", { hour12: true, hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" });
+    return date.toLocaleTimeString("en-US", {
+      hour12: true,
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Kolkata",
+    });
   };
 
   const formatDate = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+    return date.toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      timeZone: "Asia/Kolkata",
+    });
   };
 
   const groupedMessages = chatMessages.reduce((acc, msg) => {
@@ -223,17 +243,32 @@ const FounderRequests = () => {
     return acc;
   }, {});
 
-  const acceptedInvestors = investorRequests.filter(r => r.status === "accepted");
-  const pendingInvestors = investorRequests.filter(r => r.status === "pending");
+  const acceptedInvestors = investorRequests.filter(
+    (r) => r.status === "accepted"
+  );
+  const pendingInvestors = investorRequests.filter(
+    (r) => r.status === "pending"
+  );
 
   return (
     <>
       <FounderNavbar />
-      <div style={{ backgroundColor: "#f0f0f0", minHeight: "100vh", padding: "2rem 0" }}>
+      <div
+        style={{
+          backgroundColor: "#f0f0f0",
+          minHeight: "100vh",
+          padding: "2rem 0",
+        }}
+      >
         <div className="container d-flex" style={{ maxWidth: "1200px" }}>
           {/* Left: Investor Requests */}
-          <div className="col-4 pe-2" style={{ maxHeight: "80vh", overflowY: "auto" }}>
-            <h4 className="mb-3 text-center" style={{ color: "rgb(18,0,94)" }}>Chats</h4>
+          <div
+            className="col-4 pe-2"
+            style={{ maxHeight: "80vh", overflowY: "auto" }}
+          >
+            <h4 className="mb-3 text-center" style={{ color: "rgb(18,0,94)" }}>
+              Chats
+            </h4>
             {/* Accepted investors */}
             {acceptedInvestors.length === 0 ? (
               <p className="text-center text-muted">No accepted investors</p>
@@ -242,14 +277,25 @@ const FounderRequests = () => {
                 <div
                   key={index}
                   className={`mb-3 p-3 rounded-4 shadow-sm d-flex justify-content-between align-items-center`}
-                  style={{ backgroundColor: "#fff", color: "rgb(18,0,94)", cursor: "pointer" }}
+                  style={{
+                    backgroundColor: "#fff",
+                    color: "rgb(18,0,94)",
+                    cursor: "pointer",
+                  }}
                   onClick={() => setSelectedInvestor(req.investorEmail)}
                 >
                   <div>
                     <h6 className="mb-1 fw-bold">{req.investorEmail}</h6>
-                    <p className="mb-0 text-truncate" style={{ maxWidth: "180px" }}>{req.startupName}</p>
+                    <p
+                      className="mb-0 text-truncate"
+                      style={{ maxWidth: "180px" }}
+                    >
+                      {req.startupName}
+                    </p>
                   </div>
-                  <span style={{ color: "rgb(18,0,94)", fontWeight: "bold" }}>Chat</span>
+                  <span style={{ color: "rgb(18,0,94)", fontWeight: "bold" }}>
+                    Chat
+                  </span>
                 </div>
               ))
             )}
@@ -257,7 +303,12 @@ const FounderRequests = () => {
             {/* Pending investors */}
             {pendingInvestors.length > 0 && (
               <>
-                <h5 className="mt-4 mb-2 text-center" style={{ color: "rgb(18,0,94)" }}>Pending Requests</h5>
+                <h5
+                  className="mt-4 mb-2 text-center"
+                  style={{ color: "rgb(18,0,94)" }}
+                >
+                  Pending Requests
+                </h5>
                 {pendingInvestors.map((req, index) => (
                   <div
                     key={index}
@@ -266,11 +317,30 @@ const FounderRequests = () => {
                   >
                     <div>
                       <h6 className="mb-1 fw-bold">{req.investorEmail}</h6>
-                      <p className="mb-0 text-truncate" style={{ maxWidth: "180px" }}>{req.startupName}</p>
+                      <p
+                        className="mb-0 text-truncate"
+                        style={{ maxWidth: "180px" }}
+                      >
+                        {req.startupName}
+                      </p>
                     </div>
                     <div className="d-flex gap-1 flex-column">
-                      <button className="btn btn-success btn-sm" onClick={() => handleResponse(req.investorEmail, "accept")}>Accept</button>
-                      <button className="btn btn-outline-danger btn-sm" onClick={() => handleResponse(req.investorEmail, "reject")}>Reject</button>
+                      <button
+                        className="btn btn-success btn-sm"
+                        onClick={() =>
+                          handleResponse(req.investorEmail, "accept")
+                        }
+                      >
+                        Accept
+                      </button>
+                      <button
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() =>
+                          handleResponse(req.investorEmail, "reject")
+                        }
+                      >
+                        Reject
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -279,12 +349,31 @@ const FounderRequests = () => {
           </div>
 
           {/* Right: Chat Window */}
-          <div className="col-8 ps-2 d-flex flex-column" style={{ maxHeight: "80vh", backgroundColor: "#fff", borderRadius: "12px", padding: "1rem" }}>
+          <div
+            className="col-8 ps-2 d-flex flex-column"
+            style={{
+              maxHeight: "80vh",
+              backgroundColor: "#fff",
+              borderRadius: "12px",
+              padding: "1rem",
+            }}
+          >
             {selectedInvestor ? (
               <>
-                <h5 className="text-center mb-3 fw-bold" style={{ color: "rgb(18,0,94)" }}>{selectedInvestor}</h5>
-                <div style={{ flexGrow: 1, overflowY: "auto", padding: "0 0.5rem" }}>
-                  {Object.keys(groupedMessages).map(date => (
+                <h5
+                  className="text-center mb-3 fw-bold"
+                  style={{ color: "rgb(18,0,94)" }}
+                >
+                  {selectedInvestor}
+                </h5>
+                <div
+                  style={{
+                    flexGrow: 1,
+                    overflowY: "auto",
+                    padding: "0 0.5rem",
+                  }}
+                >
+                  {Object.keys(groupedMessages).map((date) => (
                     <div key={date} className="mb-3">
                       <div className="text-center my-2">
                         <span className="badge bg-secondary">{date}</span>
@@ -305,22 +394,34 @@ const FounderRequests = () => {
                         </div>
                       ))} */}
 
-{groupedMessages[date].map((msg, i) => (
-  <div key={i} className={`d-flex mb-2 ${msg.senderId === founderEmail ? "justify-content-end" : "justify-content-start"}`}>
-    <div
-      className="p-2 rounded-3 shadow-sm"
-      style={{
-        maxWidth: "70%",
-        backgroundColor: msg.senderId === founderEmail ? "rgb(18,0,94)" : "#e4e6eb",
-        color: msg.senderId === founderEmail ? "#fff" : "#000"
-      }}
-    >
-      <p className="mb-1">{msg.text}</p>
-      <small className="text-muted float-end">{formatTime(msg.timestamp)}</small>
-    </div>
-  </div>
-))}
-
+                      {groupedMessages[date].map((msg, i) => (
+                        <div
+                          key={i}
+                          className={`d-flex mb-2 ${
+                            msg.senderId === founderEmail
+                              ? "justify-content-end"
+                              : "justify-content-start"
+                          }`}
+                        >
+                          <div
+                            className="p-2 rounded-3 shadow-sm"
+                            style={{
+                              maxWidth: "70%",
+                              backgroundColor:
+                                msg.senderId === founderEmail
+                                  ? "rgb(18,0,94)"
+                                  : "#e4e6eb",
+                              color:
+                                msg.senderId === founderEmail ? "#fff" : "#000",
+                            }}
+                          >
+                            <p className="mb-1">{msg.text}</p>
+                            <small className="text-muted float-end">
+                              {formatTime(msg.timestamp)}
+                            </small>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ))}
                   <div ref={chatEndRef} />
@@ -334,7 +435,13 @@ const FounderRequests = () => {
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                   />
-                  <button className="btn" style={{ backgroundColor: "rgb(18,0,94)", color: "#fff" }} onClick={sendMessage}>Send</button>
+                  <button
+                    className="btn"
+                    style={{ backgroundColor: "rgb(18,0,94)", color: "#fff" }}
+                    onClick={sendMessage}
+                  >
+                    Send
+                  </button>
                 </div>
               </>
             ) : (

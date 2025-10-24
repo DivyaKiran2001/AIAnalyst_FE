@@ -1,6 +1,15 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword ,RecaptchaVerifier, signInWithPhoneNumber,sendEmailVerification} from "firebase/auth";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  sendEmailVerification,
+} from "firebase/auth";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -14,7 +23,7 @@ const firebaseConfig = {
   storageBucket: "aianalyst-61509.firebasestorage.app",
   messagingSenderId: "78713256065",
   appId: "1:78713256065:web:bc01b58174b50e79d9b580",
-  measurementId: "G-FQK8LZ09K5"
+  measurementId: "G-FQK8LZ09K5",
 };
 
 // Initialize Firebase
@@ -26,19 +35,21 @@ googleProvider.setCustomParameters({
   prompt: "consent", // Forces Google to show consent every time
 });
 
-
 // helpers
-export const signUpWithEmail = (email, password) => createUserWithEmailAndPassword(auth, email, password);
-export const loginInWithEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
+export const signUpWithEmail = (email, password) =>
+  createUserWithEmailAndPassword(auth, email, password);
+export const loginInWithEmail = (email, password) =>
+  signInWithEmailAndPassword(auth, email, password);
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
 
 // Send email verification
-const sendVerificationEmail = (user) => sendEmailVerification(user, {
-  url: "https://3000-genaihackat-aianalystfe-hgc0ltv9os0.ws-us121.gitpod.io/signup" // Redirect after verification
-});
+const sendVerificationEmail = (user) =>
+  sendEmailVerification(user, {
+    url: "https://3000-genaihackat-aianalystfe-hgc0ltv9os0.ws-us121.gitpod.io/signup", // Redirect after verification
+  });
 
 // Google auth using redirect
 // export const signInWithGoogle = () =>
 //   signInWithRedirect(auth, googleProvider);
 
-export { RecaptchaVerifier, signInWithPhoneNumber,sendVerificationEmail };
+export { RecaptchaVerifier, signInWithPhoneNumber, sendVerificationEmail };

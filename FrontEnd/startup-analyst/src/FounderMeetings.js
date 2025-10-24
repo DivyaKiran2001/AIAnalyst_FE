@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import FounderNavbar from "./FounderNavbar";
 
-const BACKEND_URL =
-  "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev";
+// const BACKEND_URL =
+//   "http://localhost:8000";
 
+const BACKEND_URL = "http://localhost:8000";
 const FounderMeetings = () => {
   const founderEmail = sessionStorage.getItem("emailId");
   const [meetings, setMeetings] = useState([]);
@@ -44,7 +45,7 @@ const FounderMeetings = () => {
 
   // Handle Google Calendar reconnect
   const handleReconnectCalendar = () => {
-    window.location.href = `${BACKEND_URL}/api/google/authorize?email=${founderEmail}`;
+    window.location.href = `${BACKEND_URL}/api/google/authorize?email=${founderEmail}&role=founder`;
   };
 
   // Handle accept/decline
@@ -162,7 +163,9 @@ const FounderMeetings = () => {
                       {m.startupName}
                     </h5>
                     <p className="mb-1">
-                      <strong style={{ color: "rgb(18, 0, 94)" }}>Investor:</strong>{" "}
+                      <strong style={{ color: "rgb(18, 0, 94)" }}>
+                        Investor:
+                      </strong>{" "}
                       {m.investorEmail}
                     </p>
                     <p className="mb-1">
@@ -174,7 +177,9 @@ const FounderMeetings = () => {
                       })}
                     </p>
                     <p className="mb-2">
-                      <strong style={{ color: "rgb(18, 0, 94)" }}>Status:</strong>{" "}
+                      <strong style={{ color: "rgb(18, 0, 94)" }}>
+                        Status:
+                      </strong>{" "}
                       <span
                         className={`badge ${
                           m.status === "pending"
@@ -202,7 +207,9 @@ const FounderMeetings = () => {
                         </button>
                         <button
                           className="btn btn-outline-danger btn-sm"
-                          onClick={() => handleMeetingResponse(m._id, "decline")}
+                          onClick={() =>
+                            handleMeetingResponse(m._id, "decline")
+                          }
                         >
                           Decline
                         </button>

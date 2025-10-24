@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi import Request as FastAPIRequest
 from google.auth.transport.requests import Request as GoogleRequest
+from google.auth.transport.requests import Request
+
 from pydantic import BaseModel, EmailStr
 from pymongo import MongoClient
 from google.oauth2 import id_token
@@ -274,7 +276,7 @@ user_credentials_collection = db["UserGoogleCredentials"]
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
-REDIRECT_URI = "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rg6rwqiydysl6ocy.cloudworkstations.dev/api/google/oauth2callback"
+REDIRECT_URI = "http://localhost:8000/api/google/oauth2callback"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 
@@ -328,7 +330,7 @@ socket_app = socketio.ASGIApp(sio, app)
 import firebase_admin
 from firebase_admin import credentials, auth
 
-cred = credentials.Certificate("aianalyst-61509-firebase-adminsdk-fbsvc-d2fbeecd8c.json")  # download from Firebase console
+cred = credentials.Certificate("aianalyst-61509-firebase-adminsdk-fbsvc-17fb406b27.json")  # download from Firebase console
 firebase_admin.initialize_app(cred)
 
 
@@ -772,7 +774,8 @@ def oauth2callback(code: str, state: str):
     Save credentials and redirect user to dashboard.
     """
     try:
-        email, role = state.split("|")
+        email = state       # just use state as email
+        role = "founder"    # default role
 
         flow = Flow.from_client_config(
             {
@@ -797,13 +800,10 @@ def oauth2callback(code: str, state: str):
             upsert=True
         )
 
-        # Redirect user to appropriate dashboard
-        if role == "founder":
-            dashboard_url = "https://3000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/f-dashboard?calendarConnected=true"
-        else:
-            dashboard_url = "https://3000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/investor-home?calendarConnected=true"
-
+        dashboard_url = "http://localhost:3000/f-dashboard?calendarConnected=true"
         return RedirectResponse(url=dashboard_url)
+
+       
     except Exception as e:
         print("❌ OAuth Callback Error:", e)
         raise HTTPException(status_code=500, detail=str(e))

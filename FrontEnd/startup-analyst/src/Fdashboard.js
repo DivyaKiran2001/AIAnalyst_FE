@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import 'bootstrap/dist/css/bootstrap.min.css';
+import "bootstrap/dist/css/bootstrap.min.css";
 import FounderNavbar from "./FounderNavbar"; // import your navbar
 
 const Fdashboard = () => {
@@ -7,12 +7,23 @@ const Fdashboard = () => {
   const [startupDetails, setStartupDetails] = useState({
     name: "Ziniosa",
     incorporation: "September 2024",
-    about: "Ziniosa is a startup focused on fashion rental and resale innovation.",
+    about:
+      "Ziniosa is a startup focused on fashion rental and resale innovation.",
   });
 
   const [meetings, setMeetings] = useState([
-    { id: 1, title: "Meeting with Angel Investor", date: "2025-10-28", time: "3:00 PM" },
-    { id: 2, title: "Pitch Review Session", date: "2025-10-30", time: "11:00 AM" },
+    {
+      id: 1,
+      title: "Meeting with Angel Investor",
+      date: "2025-10-28",
+      time: "3:00 PM",
+    },
+    {
+      id: 2,
+      title: "Pitch Review Session",
+      date: "2025-10-30",
+      time: "11:00 AM",
+    },
   ]);
 
   useEffect(() => {
@@ -25,7 +36,9 @@ const Fdashboard = () => {
       <FounderNavbar />
       <div className="container mt-4">
         <h2 className="fw-bold mb-3">👋 Welcome, {founderName}!</h2>
-        <p className="text-muted">Here’s an overview of your startup activity and upcoming meetings.</p>
+        <p className="text-muted">
+          Here’s an overview of your startup activity and upcoming meetings.
+        </p>
 
         {/* Startup Summary Cards */}
         <div className="row mt-4">

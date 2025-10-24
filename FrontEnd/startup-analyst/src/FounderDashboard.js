@@ -1,12 +1,10 @@
-
-
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import io from "socket.io-client";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-const BACKEND_URL = "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev";
+const BACKEND_URL =
+  "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev";
 const socket = io(BACKEND_URL);
 
 export default function FounderDashboard() {
@@ -52,8 +50,8 @@ export default function FounderDashboard() {
         const res = await fetch(
           `${BACKEND_URL}/api/founder/interested-investors?founderEmail=${founderEmail}`
         );
-        console.log(res)
-        
+        console.log(res);
+
         const data = await res.json();
         console.log("Investor interests:", data.investors);
         setInvestorRequests(data.investors || []);
@@ -64,13 +62,13 @@ export default function FounderDashboard() {
     if (founderEmail) fetchInvestorRequests();
   }, [founderEmail]);
 
- 
-
   // ✅ Fetch meetings for this founder
   useEffect(() => {
     const fetchMeetings = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/meetings/founder/${founderEmail}`);
+        const res = await fetch(
+          `${BACKEND_URL}/api/meetings/founder/${founderEmail}`
+        );
         const data = await res.json();
         setMeetings(data.meetings || []);
       } catch (err) {
@@ -84,7 +82,9 @@ export default function FounderDashboard() {
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/google/is_connected?email=${founderEmail}`);
+        const res = await fetch(
+          `${BACKEND_URL}/api/google/is_connected?email=${founderEmail}`
+        );
         const data = await res.json();
         setCalendarConnected(data.connected);
       } catch (err) {
@@ -97,7 +97,9 @@ export default function FounderDashboard() {
   // ✅ Grant Google Calendar Access
   const handleGrantCalendarAccess = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/google/authorize?email=${founderEmail}`);
+      const res = await fetch(
+        `${BACKEND_URL}/api/google/authorize?email=${founderEmail}`
+      );
       const data = await res.json();
       window.location.href = data.auth_url;
     } catch (err) {
@@ -134,7 +136,6 @@ export default function FounderDashboard() {
   //   }
   // };
 
-
   const handleMeetingResponse = async (meetingId, action) => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/meetings/respond`, {
@@ -142,19 +143,23 @@ export default function FounderDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ meetingId, action }),
       });
-  
+
       const data = await res.json();
-  
+
       if (res.ok) {
         alert(`Meeting ${action}ed successfully!`);
         setMeetings((prev) =>
           prev.map((m) =>
             m._id === meetingId
-              ? { ...m, status: action === "accept" ? "accepted" : "declined", hangoutLink: data.hangoutLink }
+              ? {
+                  ...m,
+                  status: action === "accept" ? "accepted" : "declined",
+                  hangoutLink: data.hangoutLink,
+                }
               : m
           )
         );
-      } 
+      }
       // Handle expired Google authorization
       else if (
         res.status === 401 &&
@@ -177,13 +182,13 @@ export default function FounderDashboard() {
       alert("Something went wrong. Please try again.");
     }
   };
-  
+
   const handleChat = (investorEmail) => {
     const participants = [founderEmail, investorEmail];
     navigate("/chat", { state: { participants } });
   };
 
-// ✅ Accept or Reject investor interest
+  // ✅ Accept or Reject investor interest
   const handleResponse = async (investorEmail, action) => {
     try {
       if (action === "accept") {
@@ -212,146 +217,146 @@ export default function FounderDashboard() {
       console.error("Error responding:", err);
     }
   };
-//   return (
-//   <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center bg-light">
-//     <div className="container text-center">
-//       <h1 className="mb-4 text-primary fw-bold">Founder Dashboard</h1>
-//       <p className="text-muted mb-5">
-//         Welcome back! Manage your startups and investor requests.
-//       </p>
+  //   return (
+  //   <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center bg-light">
+  //     <div className="container text-center">
+  //       <h1 className="mb-4 text-primary fw-bold">Founder Dashboard</h1>
+  //       <p className="text-muted mb-5">
+  //         Welcome back! Manage your startups and investor requests.
+  //       </p>
 
-//       {/* --- Dashboard Options Row --- */}
-//       <div className="row justify-content-center g-4 mb-5">
-//         {/* Startup Registration */}
-//         <div className="col-md-4 col-sm-6">
-//           <div className="card shadow-sm border-0 rounded-4 h-100">
-//             <div className="card-body">
-//               <h5 className="card-title mb-3 text-primary">Startup Registration</h5>
-//               <p className="card-text text-muted">
-//                 Register your startup to get started with our AI evaluation system.
-//               </p>
-//               <button
-//                 className="btn btn-primary w-100"
-//                 onClick={() => handleNavigation("/startup-registration")}
-//               >
-//                 Go to Registration
-//               </button>
-//             </div>
-//           </div>
-//         </div>
+  //       {/* --- Dashboard Options Row --- */}
+  //       <div className="row justify-content-center g-4 mb-5">
+  //         {/* Startup Registration */}
+  //         <div className="col-md-4 col-sm-6">
+  //           <div className="card shadow-sm border-0 rounded-4 h-100">
+  //             <div className="card-body">
+  //               <h5 className="card-title mb-3 text-primary">Startup Registration</h5>
+  //               <p className="card-text text-muted">
+  //                 Register your startup to get started with our AI evaluation system.
+  //               </p>
+  //               <button
+  //                 className="btn btn-primary w-100"
+  //                 onClick={() => handleNavigation("/startup-registration")}
+  //               >
+  //                 Go to Registration
+  //               </button>
+  //             </div>
+  //           </div>
+  //         </div>
 
-//         {/* My Startups */}
-//         <div className="col-md-4 col-sm-6">
-//           <div className="card shadow-sm border-0 rounded-4 h-100">
-//             <div className="card-body">
-//               <h5 className="card-title mb-3 text-primary">My Startups</h5>
-//               {loading ? (
-//                 <p>Loading startups...</p>
-//               ) : startups.length === 0 ? (
-//                 <p className="text-muted">No startups registered yet.</p>
-//               ) : (
-//                 startups.map((startup) => (
-//                   <div key={startup._id} className="text-start mb-3 border-top pt-2">
-//                     <h6 className="fw-bold">{startup.startupName}</h6>
-//                     <p className="mb-1">
-//                       <strong>Registered:</strong> {startup.registeredName}
-//                     </p>
-//                     <p className="mb-1">
-//                       <strong>Incorporation:</strong>{" "}
-//                       {startup.incorporationMonth} {startup.incorporationYear}
-//                     </p>
-//                     <p className="mb-0">
-//                       <strong>About:</strong> {startup.about}
-//                     </p>
-//                   </div>
-//                 ))
-//               )}
-//             </div>
-//           </div>
-//         </div>
+  //         {/* My Startups */}
+  //         <div className="col-md-4 col-sm-6">
+  //           <div className="card shadow-sm border-0 rounded-4 h-100">
+  //             <div className="card-body">
+  //               <h5 className="card-title mb-3 text-primary">My Startups</h5>
+  //               {loading ? (
+  //                 <p>Loading startups...</p>
+  //               ) : startups.length === 0 ? (
+  //                 <p className="text-muted">No startups registered yet.</p>
+  //               ) : (
+  //                 startups.map((startup) => (
+  //                   <div key={startup._id} className="text-start mb-3 border-top pt-2">
+  //                     <h6 className="fw-bold">{startup.startupName}</h6>
+  //                     <p className="mb-1">
+  //                       <strong>Registered:</strong> {startup.registeredName}
+  //                     </p>
+  //                     <p className="mb-1">
+  //                       <strong>Incorporation:</strong>{" "}
+  //                       {startup.incorporationMonth} {startup.incorporationYear}
+  //                     </p>
+  //                     <p className="mb-0">
+  //                       <strong>About:</strong> {startup.about}
+  //                     </p>
+  //                   </div>
+  //                 ))
+  //               )}
+  //             </div>
+  //           </div>
+  //         </div>
 
-//         {/* Investor Requests */}
-//         <div className="col-md-4 col-sm-6">
-//           <div className="card shadow-sm border-0 rounded-4 h-100">
-//             <div className="card-body">
-//               <h5 className="card-title mb-3 text-success">Investor Requests</h5>
-//               {investorRequests.length === 0 ? (
-//                 <p className="text-muted">No investor requests yet.</p>
-//               ) : (
-//                 investorRequests.map((req, index) => (
-//                   <div
-//                     key={index}
-//                     className="text-start mb-3 border-top pt-2"
-//                   >
-//                     <h6 className="fw-bold text-primary">
-//                       {req.investorEmail}
-//                     </h6>
-//                     <p className="mb-1">
-//                       <strong>Startup:</strong> {req.startupName}
-//                     </p>
-//                     <p className="mb-2">
-//                       <strong>Status:</strong>{" "}
-//                       <span
-//                         className={
-//                           req.status === "accepted"
-//                             ? "text-success"
-//                             : req.status === "rejected"
-//                             ? "text-danger"
-//                             : "text-warning"
-//                         }
-//                       >
-//                         {req.status}
-//                       </span>
-//                     </p>
+  //         {/* Investor Requests */}
+  //         <div className="col-md-4 col-sm-6">
+  //           <div className="card shadow-sm border-0 rounded-4 h-100">
+  //             <div className="card-body">
+  //               <h5 className="card-title mb-3 text-success">Investor Requests</h5>
+  //               {investorRequests.length === 0 ? (
+  //                 <p className="text-muted">No investor requests yet.</p>
+  //               ) : (
+  //                 investorRequests.map((req, index) => (
+  //                   <div
+  //                     key={index}
+  //                     className="text-start mb-3 border-top pt-2"
+  //                   >
+  //                     <h6 className="fw-bold text-primary">
+  //                       {req.investorEmail}
+  //                     </h6>
+  //                     <p className="mb-1">
+  //                       <strong>Startup:</strong> {req.startupName}
+  //                     </p>
+  //                     <p className="mb-2">
+  //                       <strong>Status:</strong>{" "}
+  //                       <span
+  //                         className={
+  //                           req.status === "accepted"
+  //                             ? "text-success"
+  //                             : req.status === "rejected"
+  //                             ? "text-danger"
+  //                             : "text-warning"
+  //                         }
+  //                       >
+  //                         {req.status}
+  //                       </span>
+  //                     </p>
 
-//                     {req.status === "pending" && (
-//                       <div className="d-flex gap-2">
-//                         <button
-//                           className="btn btn-success btn-sm"
-//                           onClick={() =>
-//                             handleResponse(req.investorEmail, "accept")
-//                           }
-//                         >
-//                           Accept
-//                         </button>
-//                         <button
-//                           className="btn btn-outline-danger btn-sm"
-//                           onClick={() =>
-//                             handleResponse(req.investorEmail, "reject")
-//                           }
-//                         >
-//                           Reject
-//                         </button>
-//                       </div>
-//                     )}
+  //                     {req.status === "pending" && (
+  //                       <div className="d-flex gap-2">
+  //                         <button
+  //                           className="btn btn-success btn-sm"
+  //                           onClick={() =>
+  //                             handleResponse(req.investorEmail, "accept")
+  //                           }
+  //                         >
+  //                           Accept
+  //                         </button>
+  //                         <button
+  //                           className="btn btn-outline-danger btn-sm"
+  //                           onClick={() =>
+  //                             handleResponse(req.investorEmail, "reject")
+  //                           }
+  //                         >
+  //                           Reject
+  //                         </button>
+  //                       </div>
+  //                     )}
 
-//                     {req.status === "accepted" && (
-//                       <button
-//                         className="btn btn-outline-primary btn-sm mt-2"
-//                         onClick={() => handleChat(req.investorEmail)}
-//                       >
-//                         Chat
-//                       </button>
-//                     )}
-//                   </div>
-//                 ))
-//               )}
-//             </div>
-//           </div>
-//         </div>
-//       </div>
+  //                     {req.status === "accepted" && (
+  //                       <button
+  //                         className="btn btn-outline-primary btn-sm mt-2"
+  //                         onClick={() => handleChat(req.investorEmail)}
+  //                       >
+  //                         Chat
+  //                       </button>
+  //                     )}
+  //                   </div>
+  //                 ))
+  //               )}
+  //             </div>
+  //           </div>
+  //         </div>
+  //       </div>
 
-//       {/* --- Logout Button --- */}
-//       <div className="mt-4">
-//         <button className="btn btn-danger px-4" onClick={handleLogout}>
-//           Logout
-//         </button>
-//       </div>
-//     </div>
-//   </div>
-// );
+  //       {/* --- Logout Button --- */}
+  //       <div className="mt-4">
+  //         <button className="btn btn-danger px-4" onClick={handleLogout}>
+  //           Logout
+  //         </button>
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
 
-return (
+  return (
     <div className="min-vh-100 d-flex flex-column align-items-center bg-light">
       <div className="container text-center py-5">
         {/* ---------- Header ---------- */}
@@ -444,7 +449,10 @@ return (
                   <p className="text-muted">No investor requests yet.</p>
                 ) : (
                   investorRequests.map((req, index) => (
-                    <div key={index} className="text-start mb-3 border-top pt-2">
+                    <div
+                      key={index}
+                      className="text-start mb-3 border-top pt-2"
+                    >
                       <h6 className="fw-bold text-primary">
                         {req.investorEmail}
                       </h6>
@@ -575,5 +583,3 @@ return (
     </div>
   );
 }
-
-
