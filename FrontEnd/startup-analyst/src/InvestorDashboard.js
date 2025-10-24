@@ -70,18 +70,18 @@ useEffect(() => {
     }
   };
   // ---------- Grant Google Calendar Access ----------
-  const handleGrantCalendarAccess = async () => {
-    try {
-      const res = await fetch(
-        `https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/google/authorize?email=${investorEmail}`
-      );
-      const data = await res.json();
-      window.location.href = data.auth_url; // Redirect to Google consent screen
-    } catch (err) {
-      console.error("Error granting access:", err);
-      alert("Failed to connect Google Calendar.");
-    }
-  };
+  // const handleGrantCalendarAccess = async () => {
+  //   try {
+  //     const res = await fetch(
+  //       `https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/google/authorize?email=${investorEmail}`
+  //     );
+  //     const data = await res.json();
+  //     window.location.href = data.auth_url; // Redirect to Google consent screen
+  //   } catch (err) {
+  //     console.error("Error granting access:", err);
+  //     alert("Failed to connect Google Calendar.");
+  //   }
+  // };
 
 
   // Fetch startups on mount
@@ -221,7 +221,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
   
       <div className="container mt-5">
         {/* Header */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        {/* <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
             {!calendarConnected ? (
               <button
@@ -234,7 +234,7 @@ console.log("Parsed date:", new Date(proposedDateTime).toISOString());
               <span className="badge bg-success me-3">Calendar Connected</span>
             )}
           </div>
-        </div>
+        </div> */}
   
         {/* Main Content: Startups (left) + Meetings (right) */}
         <div className="row">

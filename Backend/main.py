@@ -26,6 +26,8 @@ from datetime import datetime
 from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
 
+
+
 app = FastAPI()
 load_dotenv()
 origins = [
@@ -596,29 +598,72 @@ def get_slots(founderEmail: str, date: str):
 
 #     return build("calendar", "v3", credentials=creds)
 
+# def get_calendar_service(user_email):
+#     creds_data = user_credentials_collection.find_one({"email": user_email})
+#     if not creds_data or "credentials" not in creds_data:
+#         raise HTTPException(status_code=401, detail=f"Google authorization expired for {user_email}. Please reconnect your calendar.")
+
+#     creds_data = creds_data["credentials"]
+
+#     # ✅ Convert expiry to string if it's a datetime
+#     if isinstance(creds_data.get("expiry"), datetime):
+#         creds_data["expiry"] = creds_data["expiry"].isoformat() + "Z"
+
+#     creds = Credentials.from_authorized_user_info(creds_data, SCOPES)
+
+#     # ✅ Auto-refresh token if expired
+#     if creds and creds.expired and creds.refresh_token:
+#         try:
+#             creds.refresh(Request())
+#             user_credentials_collection.update_one(
+#                 {"email": user_email},
+#                 {"$set": {"credentials": json.loads(creds.to_json())}}
+#             )
+#         except Exception as e:
+#             raise HTTPException(status_code=401, detail=f"Google authorization expired for {user_email}. Please reconnect your calendar.")
+
+#     return build("calendar", "v3", credentials=creds)
+
+
 def get_calendar_service(user_email):
     creds_data = user_credentials_collection.find_one({"email": user_email})
+    print(creds_data)
     if not creds_data or "credentials" not in creds_data:
-        raise HTTPException(status_code=401, detail=f"Google authorization expired for {user_email}. Please reconnect your calendar.")
+        raise HTTPException(
+            status_code=401,
+            detail=f"Google authorization expired for {user_email}. Please reconnect your calendar."
+        )
 
-    creds_data = creds_data["credentials"]
+    creds_dict = creds_data["credentials"]
 
-    # ✅ Convert expiry to string if it's a datetime
-    if isinstance(creds_data.get("expiry"), datetime):
-        creds_data["expiry"] = creds_data["expiry"].isoformat() + "Z"
+    # Fix expiry for Google API
+    if "expiry" in creds_dict:
+        if isinstance(creds_dict["expiry"], datetime):
+            creds_dict["expiry"] = creds_dict["expiry"].replace(microsecond=0).isoformat() + "Z"
+            print("EXPIRY",creds_dict["expiry"])
+        elif isinstance(creds_dict["expiry"], str) and "." in creds_dict["expiry"]:
+            creds_dict["expiry"] = creds_dict["expiry"].split(".")[0] + "Z"
 
-    creds = Credentials.from_authorized_user_info(creds_data, SCOPES)
+    # Create Credentials object
+    creds = Credentials.from_authorized_user_info(creds_dict, SCOPES)
+    print("CCCCCCCCCCCCCCC",creds)
 
-    # ✅ Auto-refresh token if expired
-    if creds and creds.expired and creds.refresh_token:
+    # Auto-refresh token if expired
+    if creds.expired and creds.refresh_token:
+        print("REFRESHING TOKEN...........................")
         try:
             creds.refresh(Request())
+            # Save updated credentials back to DB
             user_credentials_collection.update_one(
                 {"email": user_email},
                 {"$set": {"credentials": json.loads(creds.to_json())}}
             )
         except Exception as e:
-            raise HTTPException(status_code=401, detail=f"Google authorization expired for {user_email}. Please reconnect your calendar.")
+            raise HTTPException(
+                status_code=401,
+                detail=f"Google authorization expired for {user_email}. Please reconnect your calendar."
+            )
+        print("SAVED NEW TOKEN")
 
     return build("calendar", "v3", credentials=creds)
 
