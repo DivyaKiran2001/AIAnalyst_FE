@@ -10,6 +10,7 @@ google-auth-oauthlib
 google-auth-httplib2
 google-api-python-client
 uvicorn
+google-cloud-bigquery
 uvicorn[standard]
 google-cloud-texttospeech
 google-cloud-speech
@@ -17,6 +18,14 @@ python-socketio[asyncio_server]==5.12.1
 python-multipart==0.0.6
 requests==2.32.0
 deprecated==1.2.14
+vertexai
+pandas
+numpy
+python-dotenv
+aiohttp
+beautifulsoup4==4.12.2
+textblob==0.17.1
+newsapi-python==0.2.7
 pymongo
 firebase-admin
 PyJWT

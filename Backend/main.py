@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi import Request as FastAPIRequest
 from google.auth.transport.requests import Request as GoogleRequest
 from google.auth.transport.requests import Request
-
 from pydantic import BaseModel, EmailStr
 from pymongo import MongoClient
 from google.oauth2 import id_token

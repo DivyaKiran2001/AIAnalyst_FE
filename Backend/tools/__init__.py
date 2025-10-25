@@ -1,0 +1,1 @@
+from .processing_tool import process_document
