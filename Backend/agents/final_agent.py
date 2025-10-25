@@ -820,7 +820,8 @@ try:
                     "incorporationYear",
                     "about",
                     "emailId",
-                    "uid"
+                    "uid",
+                    "createdAt"
                 ],
                 "properties": {
                     "startupName": {"bsonType": "string"},
@@ -828,14 +829,32 @@ try:
                     "incorporationMonth": {"bsonType": "string"},
                     "incorporationYear": {"bsonType": "string"},
                     "about": {"bsonType": "string"},
-                    "emailId": {"bsonType": "string"},  # founder email
+
+                    # Founder identity
+                    "emailId": {"bsonType": "string"},
                     "uid": {"bsonType": "string"},
+
+                    # Uploaded Files Section
+                    "uploadedFiles": {
+                        "bsonType": "array",
+                        "items": {
+                            "bsonType": "object",
+                            "required": ["fileName", "gcsUrl"],
+                            "properties": {
+                                "fileName": {"bsonType": "string"},
+                                "gcsUrl": {"bsonType": "string"},
+                                "uploadedAt": {"bsonType": "date"}
+                            }
+                        }
+                    },
+
                     "createdAt": {"bsonType": "date"},
+                    "updatedAt": {"bsonType": "date"},
                 },
             }
         },
     )
-    print("✅ 'StartupDetails' collection created with schema.")
+    print("✅ 'StartupDetails' collection created with updated schema.")
 except Exception:
     print("ℹ️ 'StartupDetails' collection already exists.")
 
@@ -995,6 +1014,7 @@ class StartupDetails(BaseModel):
     incorporationMonth: str
     incorporationYear: str
     about: str
+    emailId:str
 
 # --- Pydantic Model ---
 class Interest(BaseModel):
@@ -1368,7 +1388,8 @@ async def add_startup_details(request: FastAPIRequest, data: StartupDetails):
     token = auth_header.split(" ")[1]
     decoded_token = verify_firebase_token(token)
     uid = decoded_token["uid"]
-    email = decoded_token.get("email")  # Get email from logged-in user
+    # email = decoded_token.get("email")  # Get email from logged-in user
+    email = data.emailId
     print("Email",email)
 
     # Check if startup for this email already exists
@@ -2142,31 +2163,103 @@ async def startup_event():
     await session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
 
 # ===== Upload Endpoint =====
+# @app.post("/upload-and-analyze")
+# async def upload_and_analyze(files: list[UploadFile], user_email: str = Form(...)):
+#     file_paths = []
+#     bucket = storage_client.bucket(BUCKET_NAME)
+#     for file in files:
+#         blob_name = f"{user_email}/{file.filename}"
+#         blob = bucket.blob(blob_name)
+#         with tempfile.NamedTemporaryFile(delete=False) as tmp:
+#             tmp.write(await file.read())
+#             tmp_path = tmp.name
+#         blob.upload_from_filename(tmp_path)
+#         os.remove(tmp_path)
+#         file_paths.append(blob_name)
+
+#     req = DocRequest(bucket_name=BUCKET_NAME, file_paths=file_paths)
+#     content = types.Content(role="user", parts=[types.Part(text=req.json())])
+
+#     # Run root agent
+#     runner_root = adk.Runner(agent=root_agent, app_name=app_name, session_service=session_service)
+#     root_output = None
+#     async for event in runner_root.run_async(user_id=user_id, session_id=session_id, new_message=content):
+#         if event.is_final_response():
+#             root_output = event.content
+
+#     # Run question agent
+#     runner_q = adk.Runner(agent=question_agent, app_name=app_name, session_service=session_service)
+#     question_output = None
+#     async for event in runner_q.run_async(user_id=user_id, session_id=session_id, new_message=root_output):
+#         if event.is_final_response():
+#             question_output = event.content
+
+#     await filler_agent.run(question_output)
+
+#     # If client already connected, emit immediately, else mark pending
+#     if sio.manager.rooms.get(user_email):
+#         await emit_next_question(user_email)
+#     else:
+#         pending_first_questions[user_email] = True
+
+#     return JSONResponse({"status": "ok", "message": "Files uploaded and analysis started."})
+
+from typing import List
+from fastapi import UploadFile, File, Form
+from urllib.parse import quote
 @app.post("/upload-and-analyze")
-async def upload_and_analyze(files: list[UploadFile], user_email: str = Form(...)):
-    file_paths = []
+async def upload_and_analyze(
+    files: List[UploadFile] = File(...),
+    emailId: str = Form(...),
+    startupName: str = Form(...)
+):
     bucket = storage_client.bucket(BUCKET_NAME)
+    file_paths = []
+    uploaded_files_info = []
+
+    # ✅ Upload files to GCS under: emailId/startupName/<file>
     for file in files:
-        blob_name = f"{user_email}/{file.filename}"
+        blob_name = f"{emailId}/{startupName}/{file.filename}"
         blob = bucket.blob(blob_name)
+
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             tmp.write(await file.read())
             tmp_path = tmp.name
+
         blob.upload_from_filename(tmp_path)
         os.remove(tmp_path)
+
         file_paths.append(blob_name)
+
+        # URL-encode the blob name for public URL
+        encoded_blob_name = quote(blob_name)
+
+        uploaded_files_info.append({
+            "fileName": file.filename,
+            "gcsUrl": f"https://storage.googleapis.com/{BUCKET_NAME}/{encoded_blob_name}"
+        })
+
+    # ✅ Store file metadata in MongoDB
+    db.StartupDetails.update_one(
+        {"emailId": emailId, "startupName": startupName},
+        {
+            "$push": {"uploadedFiles": {"$each": uploaded_files_info}},
+            "$set": {"updatedAt": datetime.utcnow()}
+        },
+        
+    )
+
+    # -------------------- AI AGENT EXECUTION --------------------
 
     req = DocRequest(bucket_name=BUCKET_NAME, file_paths=file_paths)
     content = types.Content(role="user", parts=[types.Part(text=req.json())])
 
-    # Run root agent
     runner_root = adk.Runner(agent=root_agent, app_name=app_name, session_service=session_service)
     root_output = None
     async for event in runner_root.run_async(user_id=user_id, session_id=session_id, new_message=content):
         if event.is_final_response():
             root_output = event.content
 
-    # Run question agent
     runner_q = adk.Runner(agent=question_agent, app_name=app_name, session_service=session_service)
     question_output = None
     async for event in runner_q.run_async(user_id=user_id, session_id=session_id, new_message=root_output):
@@ -2175,13 +2268,13 @@ async def upload_and_analyze(files: list[UploadFile], user_email: str = Form(...
 
     await filler_agent.run(question_output)
 
-    # If client already connected, emit immediately, else mark pending
-    if sio.manager.rooms.get(user_email):
-        await emit_next_question(user_email)
+    # ✅ If founder already connected to socket, emit question immediately
+    if sio.manager.rooms.get(emailId):
+        await emit_next_question(emailId)
     else:
-        pending_first_questions[user_email] = True
+        pending_first_questions[emailId] = True
 
-    return JSONResponse({"status": "ok", "message": "Files uploaded and analysis started."})
+    return JSONResponse({"status": "ok", "message": "Files uploaded & voice agent is preparing questions."})
 
 # ===== Socket.IO Events =====
 @sio.event

@@ -1,11 +1,9 @@
-
-
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import io from "socket.io-client";
 
-const socket = io("https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev", {
-  transports: ["websocket", "polling"]
+const socket = io(" http://localhost:3000", {
+  transports: ["websocket", "polling"],
 });
 
 const ChatPage = () => {
@@ -27,15 +25,18 @@ const ChatPage = () => {
     socket.emit("join_room", { participants });
     console.log(Intl.DateTimeFormat().resolvedOptions());
 
-
     // Fetch chat history
-    fetch(`https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/chat/?participants=${participants.map(encodeURIComponent).join("&participants=")}`)
-      .then(res => res.json())
-      .then(data => setMessages(data.messages || []))
-      .catch(err => console.error(err));
+    fetch(
+      `https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/chat/?participants=${participants
+        .map(encodeURIComponent)
+        .join("&participants=")}`
+    )
+      .then((res) => res.json())
+      .then((data) => setMessages(data.messages || []))
+      .catch((err) => console.error(err));
 
     socket.on("receive_message", (msg) => {
-      setMessages(prev => [...prev, msg]);
+      setMessages((prev) => [...prev, msg]);
     });
 
     return () => {
@@ -45,9 +46,14 @@ const ChatPage = () => {
 
   const sendMessage = () => {
     if (!text.trim()) return;
-    const msg = { senderId, text, timestamp: new Date().toISOString(), participants };
+    const msg = {
+      senderId,
+      text,
+      timestamp: new Date().toISOString(),
+      participants,
+    };
     socket.emit("send_message", msg);
-    setMessages(prev => [...prev, msg]); // Optimistic UI
+    setMessages((prev) => [...prev, msg]); // Optimistic UI
     setText("");
   };
 
@@ -56,29 +62,36 @@ const ChatPage = () => {
   // const formatDate = (timestamp) => new Date(timestamp).toLocaleDateString();
 
   const formatTime = (timestamp) => {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString("en-US", {
-    hour12: true,
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Asia/Kolkata" // Forces India Standard Time
-  });
-};
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString("en-US", {
+      hour12: true,
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Kolkata", // Forces India Standard Time
+    });
+  };
 
-const formatDate = (timestamp) => {
-  const date = new Date(timestamp);
-  return date.toLocaleDateString("en-US", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "Asia/Kolkata"
-  });
-};
+  const formatDate = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      timeZone: "Asia/Kolkata",
+    });
+  };
 
   // Group messages by date
   const groupedMessages = messages.reduce((acc, msg) => {
-    console.log(msg.timestamp); 
-console.log(new Date(msg.timestamp).toLocaleTimeString("en-IN", { hour12: true, hour: "2-digit", minute: "2-digit", timeZone: "Asia/Calcutta" }));
+    console.log(msg.timestamp);
+    console.log(
+      new Date(msg.timestamp).toLocaleTimeString("en-IN", {
+        hour12: true,
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Calcutta",
+      })
+    );
 
     const date = formatDate(msg.timestamp);
     if (!acc[date]) acc[date] = [];
@@ -91,7 +104,14 @@ console.log(new Date(msg.timestamp).toLocaleTimeString("en-IN", { hour12: true, 
       <h3 className="text-center mb-3">Chat</h3>
 
       {/* Chat Area */}
-      <div className="border rounded p-3 mb-3" style={{ height: "500px", overflowY: "auto", backgroundColor: "#f0f2f5" }}>
+      <div
+        className="border rounded p-3 mb-3"
+        style={{
+          height: "500px",
+          overflowY: "auto",
+          backgroundColor: "#f0f2f5",
+        }}
+      >
         {Object.keys(groupedMessages).map((date) => (
           <div key={date} className="mb-3">
             {/* Date Separator */}
@@ -102,18 +122,25 @@ console.log(new Date(msg.timestamp).toLocaleTimeString("en-IN", { hour12: true, 
             {groupedMessages[date].map((msg, i) => (
               <div
                 key={i}
-                className={`d-flex mb-2 ${msg.senderId === senderId ? "justify-content-end" : "justify-content-start"}`}
+                className={`d-flex mb-2 ${
+                  msg.senderId === senderId
+                    ? "justify-content-end"
+                    : "justify-content-start"
+                }`}
               >
                 <div
                   className={`p-2 rounded-3 shadow-sm`}
                   style={{
                     maxWidth: "75%",
-                    backgroundColor: msg.senderId === senderId ? "#0d6efd" : "#e4e6eb",
-                    color: msg.senderId === senderId ? "white" : "black"
+                    backgroundColor:
+                      msg.senderId === senderId ? "#0d6efd" : "#e4e6eb",
+                    color: msg.senderId === senderId ? "white" : "black",
                   }}
                 >
                   <p className="mb-1">{msg.text}</p>
-                  <small className="text-muted float-end">{formatTime(msg.timestamp)}</small>
+                  <small className="text-muted float-end">
+                    {formatTime(msg.timestamp)}
+                  </small>
                 </div>
               </div>
             ))}

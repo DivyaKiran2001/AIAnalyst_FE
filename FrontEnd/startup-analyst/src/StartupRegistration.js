@@ -5,6 +5,8 @@ import axios from "axios";
 import { getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import FounderNavbar from "./FounderNavbar";
+import StartupDocumentUploader from "./StartupDocumentUploader";
+import StartupQuestionnaire from "./StartupQuestionnaire";
 
 export default function StartupRegistration() {
   const navigate = useNavigate();
@@ -59,6 +61,7 @@ export default function StartupRegistration() {
     const newErrors = {};
     if (!formData.startupName.trim())
       newErrors.startupName = "Startup name is required";
+
     if (!formData.registeredName.trim())
       newErrors.registeredName = "Registered name is required";
     if (!formData.incorporationMonth)
@@ -107,12 +110,15 @@ export default function StartupRegistration() {
           incorporationMonth: formData.incorporationMonth,
           incorporationYear: formData.incorporationYear,
           about: formData.about,
+          emailId: formData.emailId,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      // Move to Step 3 (File Upload)
+      setCurrentStep(3);
 
       alert("✅ Founder & Startup details submitted successfully!");
-      navigate("/f-dashboard");
+      // navigate("/f-dashboard");
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.detail || "❌ Failed to submit details");
@@ -155,7 +161,7 @@ export default function StartupRegistration() {
           <div className="col-12 col-lg-10 d-flex">
             {/* Vertical Stepper with headers + subheaders */}
             <div className="d-flex flex-column me-4 align-items-start">
-              {[1, 2].map((step) => (
+              {[1, 2, 3].map((step) => (
                 <div
                   key={step}
                   className="d-flex flex-column mb-5 position-relative"
@@ -183,7 +189,11 @@ export default function StartupRegistration() {
                           color: currentStep === step ? "rgb(18,0,94)" : "gray",
                         }}
                       >
-                        {step === 1 ? "Personal Details" : "Startup Details"}
+                        {step === 1
+                          ? "Personal Details"
+                          : step === 2
+                          ? "Startup Details"
+                          : "Files"}
                       </div>
                       <div
                         style={{
@@ -194,11 +204,13 @@ export default function StartupRegistration() {
                       >
                         {step === 1
                           ? "Tell us about yourself"
-                          : "Tell us about your startup"}
+                          : step === 2
+                          ? "Tell us about your startup"
+                          : "Upload pitch deck files"}
                       </div>
                     </div>
                   </div>
-                  {step < 2 && (
+                  {step < 3 && (
                     <div
                       style={{
                         position: "absolute",
@@ -218,7 +230,7 @@ export default function StartupRegistration() {
             {/* Form */}
             <div className="flex-grow-1 card bg-white shadow rounded-4 p-5">
               <form>
-                {currentStep === 1 ? (
+                {currentStep === 1 && (
                   <>
                     {/* Personal Details */}
                     <div className="row mb-3">
@@ -411,7 +423,8 @@ export default function StartupRegistration() {
                       </button>
                     </div>
                   </>
-                ) : (
+                )}
+                {currentStep === 2 && (
                   <>
                     {/* Startup Details */}
                     <div className="row mb-3">
@@ -438,6 +451,29 @@ export default function StartupRegistration() {
                           </div>
                         )}
                       </div>
+                      {/* <div className="col-md-6">
+                        <label
+                          className="form-label fw-bold"
+                          style={{ color: "rgb(18,0,94)" }}
+                        >
+                          Email *
+                        </label>
+                        <input
+                          type="email"
+                          className={`form-control ${
+                            errors.semailId ? "is-invalid" : ""
+                          }`}
+                          name="semailId"
+                          value={formData.semailId}
+                          onChange={handleInputChange}
+                          placeholder="Enter your email"
+                        />
+                        {errors.semailId && (
+                          <div className="invalid-feedback">
+                            {errors.semailId}
+                          </div>
+                        )}
+                      </div> */}
                       <div className="col-md-6">
                         <label
                           className="form-label fw-bold"
@@ -565,12 +601,27 @@ export default function StartupRegistration() {
                           fontWeight: "bold",
                         }}
                       >
-                        {isSubmitting ? "Submitting..." : "Submit Registration"}
+                        {isSubmitting ? "Submitting..." : "Continue →"}
                       </button>
                     </div>
                   </>
                 )}
               </form>
+              {currentStep === 3 && (
+                <StartupDocumentUploader
+                  emailId={formData.emailId}
+                  startupName={formData.startupName}
+                  // onUploadComplete={() => {
+                  //   alert("✅ Files uploaded successfully!");
+                  //   // navigate("/f-dashboard"); // ✅ navigate AFTER upload done
+                  // }}
+                  onUploadComplete={() => setCurrentStep(4)}
+                />
+              )}
+              {/* Step 4: Questionnaire */}
+              {currentStep === 4 && (
+                <StartupQuestionnaire userEmail={formData.emailId} />
+              )}
             </div>
           </div>
         </div>

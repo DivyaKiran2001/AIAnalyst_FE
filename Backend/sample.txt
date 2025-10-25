@@ -86,3 +86,9 @@ async def upload_and_analyze(
         "message": "✅ Files uploaded and saved to MongoDB",
         "uploadedFiles": uploaded_files
     }
+
+
+FRONTEND PACKAGES:
+
+npm install @mui/material @emotion/react @emotion/styled
+npm install react-dropzone

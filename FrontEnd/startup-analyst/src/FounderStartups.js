@@ -1,9 +1,75 @@
+// import React, { useEffect, useState } from "react";
+// import "bootstrap/dist/css/bootstrap.min.css";
+// import FounderNavbar from "./FounderNavbar";
+
+// // const BACKEND_URL =
+// //   "http://localhost:8000";
+
+// const BACKEND_URL = "http://localhost:8000";
+
+// const FounderStartups = () => {
+//   const [startups, setStartups] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const founderEmail = sessionStorage.getItem("emailId");
+
+//   useEffect(() => {
+//     const fetchStartups = async () => {
+//       try {
+//         const res = await fetch(`${BACKEND_URL}/api/startups`);
+//         const data = await res.json();
+//         const myStartups = data.filter((s) => s.emailId === founderEmail);
+//         setStartups(myStartups);
+//       } catch (err) {
+//         console.error("Error fetching startups:", err);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+//     fetchStartups();
+//   }, [founderEmail]);
+
+//   return (
+//     <>
+//       <FounderNavbar></FounderNavbar>
+//       <div className="container py-5">
+//         <h2 className="text-primary fw-bold mb-4 text-center">My Startups</h2>
+//         <div className="card shadow-sm border-0 rounded-4 p-4">
+//           {loading ? (
+//             <p>Loading startups...</p>
+//           ) : startups.length === 0 ? (
+//             <p className="text-muted">No startups registered yet.</p>
+//           ) : (
+//             startups.map((startup) => (
+//               <div
+//                 key={startup._id}
+//                 className="text-start mb-3 border-top pt-2"
+//               >
+//                 <h6 className="fw-bold">{startup.startupName}</h6>
+//                 <p className="mb-1">
+//                   <strong>Registered:</strong> {startup.registeredName}
+//                 </p>
+//                 <p className="mb-1">
+//                   <strong>Incorporation:</strong> {startup.incorporationMonth}{" "}
+//                   {startup.incorporationYear}
+//                 </p>
+//                 <p className="mb-0">
+//                   <strong>About:</strong> {startup.about}
+//                 </p>
+//               </div>
+//             ))
+//           )}
+//         </div>
+//       </div>
+//     </>
+//   );
+// };
+
+// export default FounderStartups;
+
 import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import FounderNavbar from "./FounderNavbar";
-
-// const BACKEND_URL =
-//   "https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev";
+import { Modal, Button } from "react-bootstrap";
 
 const BACKEND_URL = "http://localhost:8000";
 
@@ -11,6 +77,8 @@ const FounderStartups = () => {
   const [startups, setStartups] = useState([]);
   const [loading, setLoading] = useState(true);
   const founderEmail = sessionStorage.getItem("emailId");
+
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
     const fetchStartups = async () => {
@@ -30,31 +98,157 @@ const FounderStartups = () => {
 
   return (
     <>
-      <FounderNavbar></FounderNavbar>
-      <div className="container py-5">
-        <h2 className="text-primary fw-bold mb-4 text-center">My Startups</h2>
-        <div className="card shadow-sm border-0 rounded-4 p-4">
+      <FounderNavbar />
+
+      {/* Modal for PDF Preview */}
+      <Modal
+        show={!!previewUrl}
+        onHide={() => setPreviewUrl(null)}
+        size="xl"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Document Preview</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ height: "80vh" }}>
+          <iframe
+            src={previewUrl}
+            width="100%"
+            height="100%"
+            style={{ border: "none" }}
+            title="PDF Preview"
+          ></iframe>
+        </Modal.Body>
+      </Modal>
+
+      <div style={{ backgroundColor: "#f5f5f5", minHeight: "100vh" }}>
+        <div className="container py-5">
+          <h2
+            className="fw-bold mb-4 text-center"
+            style={{ color: "rgb(18,0,94)" }}
+          >
+            My Startups
+          </h2>
+
           {loading ? (
-            <p>Loading startups...</p>
+            <p className="text-center">Loading startups...</p>
           ) : startups.length === 0 ? (
-            <p className="text-muted">No startups registered yet.</p>
+            <p className="text-muted text-center">
+              No startups registered yet.
+            </p>
           ) : (
             startups.map((startup) => (
               <div
                 key={startup._id}
-                className="text-start mb-3 border-top pt-2"
+                className="card shadow-sm border-0 rounded-4 p-4 mb-4"
+                style={{ backgroundColor: "white", color: "rgb(18,0,94)" }}
               >
-                <h6 className="fw-bold">{startup.startupName}</h6>
+                <h4 className="fw-bold">{startup.startupName}</h4>
+
                 <p className="mb-1">
                   <strong>Registered:</strong> {startup.registeredName}
                 </p>
+
                 <p className="mb-1">
                   <strong>Incorporation:</strong> {startup.incorporationMonth}{" "}
                   {startup.incorporationYear}
                 </p>
-                <p className="mb-0">
+
+                <p className="mb-3">
                   <strong>About:</strong> {startup.about}
                 </p>
+
+                {/* Uploaded Files Preview */}
+                {startup.uploadedFiles && startup.uploadedFiles.length > 0 && (
+                  <>
+                    <hr />
+                    <h6 className="fw-bold mb-3">Pitch Decks & Documents</h6>
+
+                    {/* {startup.uploadedFiles.map((file, index) => {
+                      const isPDF = file.fileName
+                        .toLowerCase()
+                        .endsWith(".pdf");
+                      const previewUrl = isPDF
+                        ? file.gcsUrl
+                        : `https://drive.google.com/viewerng/viewer?embedded=true&url=${file.gcsUrl}`;
+                      console.log(previewUrl);
+                      return (
+                        <div key={index} className="mb-4">
+                          <p className="fw-semibold">📄 {file.fileName}</p>
+
+                          <iframe
+                            src={previewUrl}
+                            style={{
+                              width: "100%",
+                              height: "420px",
+                              border: "1px solid #ddd",
+                              borderRadius: "6px",
+                            }}
+                            title={file.fileName}
+                          ></iframe>
+
+                          <div className="mt-2">
+                            <a
+                              href={file.gcsUrl}
+                              download
+                              className="btn btn-sm"
+                              style={{
+                                backgroundColor: "rgb(18,0,94)",
+                                color: "white",
+                                fontWeight: "bold",
+                                padding: "6px 16px",
+                              }}
+                            >
+                              Download
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })} */}
+
+                    {startup.uploadedFiles.map((file, index) => {
+                      // Always force preview through Google Docs Viewer
+                      const previewUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(
+                        file.gcsUrl
+                      )}`;
+
+                      return (
+                        <div key={index} className="mb-4">
+                          <p className="fw-semibold">📄 {file.fileName}</p>
+
+                          {/* Preview using Google Docs Viewer */}
+                          <iframe
+                            src={previewUrl}
+                            style={{
+                              width: "100%",
+                              height: "420px",
+                              border: "1px solid #ddd",
+                              borderRadius: "6px",
+                            }}
+                            title={file.fileName}
+                          ></iframe>
+
+                          {/* Download Button */}
+                          <div className="mt-2">
+                            <a
+                              href={file.gcsUrl}
+                              download
+                              className="btn btn-sm"
+                              style={{
+                                backgroundColor: "rgb(18,0,94)",
+                                color: "white",
+                                fontWeight: "bold",
+                                padding: "6px 16px",
+                              }}
+                            >
+                              Download
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
               </div>
             ))
           )}
