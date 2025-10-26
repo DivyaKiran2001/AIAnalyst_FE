@@ -2153,7 +2153,7 @@ async def run_agent_async(agent, user_id, session_id, content):
 
 
 
-async def emit_next_question(user_email):
+async def emit_next_question(user_email,startup_name):
     if filler_agent.questions:
         key, question = next(iter(filler_agent.questions.items()))
         audio_b64 = synthesize_speech_base64(question)
@@ -2167,12 +2167,12 @@ async def emit_next_question(user_email):
         # Run parallel agents
         logger.info("Running parallel agents for comprehensive analysis...")
         agent_analyses = await run_parallel_agents(final_data, user_email)
-
+        normalized_startup_name = startup_name.strip().lower().replace(" ", "")
         print("&&&&&&&&&&&&&&&&&&&& final_agent_analyses &&&&&&&&&&&&&&&&",agent_analyses)
         
-        startup_name = final_data.get("startup_name", "")
+        # startup_name = final_data.get("startup_name", "")
         # Insert ALL data into BigQuery
-        insert_success = await insert_into_bigquery(user_email, startup_name,final_data, agent_analyses)
+        insert_success = await insert_into_bigquery(user_email, normalized_startup_name,final_data, agent_analyses)
         
 
         # # ✅ Insert / update MongoDB document with BigQuery data
@@ -2191,14 +2191,18 @@ async def emit_next_question(user_email):
         #     },
             
         # )
-        normalized_startup_name = normalize_name(startup_name)
+        # normalized_startup_name = normalize_name(startup_name)
         # existing_doc = db.StartupDetails.find_one({"emailId": user_email, "startupName": startup_name})
 
         # Fetch the existing document (case + space insensitive)
+        # existing_doc = db.StartupDetails.find_one({
+        #     "emailId": user_email,
+        #     "startupName": {"$regex": f"^{normalized_startup_name}$", "$options": "i"}
+        # })
         existing_doc = db.StartupDetails.find_one({
             "emailId": user_email,
-            "startupName": {"$regex": f"^{normalized_startup_name}$", "$options": "i"}
-        })
+            "startupName": normalized_startup_name
+        }) or {} 
         # update_fields = {
         #     "bigqueryData": {
         #         "financial_data": agent_analyses.get("financial_analysis"),
@@ -2233,9 +2237,10 @@ async def emit_next_question(user_email):
         db.StartupDetails.update_one(
             {
                 "emailId": user_email,
-                "startupName": {"$regex": f"^{normalized_startup_name}$", "$options": "i"}
+                "startupName": normalized_startup_name
             },
-            {"$set": update_fields}
+            {"$set": update_fields},
+            upsert=True
         )
 
         # Send success message to frontend with all analyses
@@ -2262,6 +2267,8 @@ async def validate_and_prepare_bq_data(user_email: str, startup_name: str,struct
             logger.warning(f"JSON serialization warning: {e}")
             return json.dumps({"error": "Data serialization failed"}, default=str)
     
+    normalized_startup_name = startup_name.strip().lower().replace(" ", "")
+
     # Validate required fields
     if not user_email:
         raise ValueError("user_email is required")
@@ -2271,7 +2278,7 @@ async def validate_and_prepare_bq_data(user_email: str, startup_name: str,struct
     # Prepare the record with proper error handling
     record = {
         "founder_email": user_email,
-        "startup_name": startup_name,
+        "startup_name": normalized_startup_name,
         "data": safe_json_dumps(structured_data),
         "created_at": datetime.utcnow().isoformat(),
         "financial_data": safe_json_dumps(agent_analyses.get("financial_analysis")),
@@ -2290,11 +2297,13 @@ async def insert_into_bigquery(user_email: str, startup_name: str,structured_dat
     """Insert all analysis data into BigQuery with enhanced error handling"""
     
     try:
+        normalized_startup_name = startup_name.strip().lower().replace(" ", "")
+
         # Prepare the data
-        record = await validate_and_prepare_bq_data(user_email, startup_name,structured_data, agent_analyses)
+        record = await validate_and_prepare_bq_data(user_email, normalized_startup_name,structured_data, agent_analyses)
         
         table_id = f"{bq_client.project}.{DATASET}.{TABLE}"
-        
+
         # Insert the record
         errors = bq_client.insert_rows_json(table_id, [record])
         
@@ -2388,15 +2397,16 @@ async def upload_and_analyze(
     emailId: str = Form(...),
     startupName: str = Form(...)
 ):
-    normalized_name = normalize_name(startupName)
+    # normalized_name = normalize_name(startupName)
     # startupName=startupName.lower()
+    normalized_startup_name = startupName.strip().lower().replace(" ", "")
     bucket = storage_client.bucket(BUCKET_NAME)
     file_paths = []
     uploaded_files_info = []
 
     # ✅ Upload files to GCS under: emailId/startupName/<file>
     for file in files:
-        blob_name = f"{emailId}/{normalized_name}/{file.filename}"
+        blob_name = f"{emailId}/{normalized_startup_name}/{file.filename}"
         blob = bucket.blob(blob_name)
 
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
@@ -2421,7 +2431,7 @@ async def upload_and_analyze(
     # ✅ Fetch existing document using normalized name
     existing_doc = db.StartupDetails.find_one({
         "emailId": emailId,
-        "startupName": normalized_name
+        "startupName": normalized_startup_name
     })
     
     created_at = existing_doc["createdAt"] if existing_doc else datetime.utcnow()
@@ -2461,7 +2471,7 @@ async def upload_and_analyze(
 # )
     # ✅ Update MongoDB with uploaded files and maintain required fields
     db.StartupDetails.update_one(
-        {"emailId": emailId, "startupName": normalized_name},
+        {"emailId": emailId, "startupName": startupName},
         {
             "$push": {"uploadedFiles": {"$each": uploaded_files_info}},
             "$set": {
@@ -2499,9 +2509,9 @@ async def upload_and_analyze(
 
     # ✅ If founder already connected to socket, emit question immediately
     if sio.manager.rooms.get(emailId):
-        await emit_next_question(emailId)
+        await emit_next_question(emailId, normalized_startup_name)
     else:
-        pending_first_questions[emailId] = True
+        pending_first_questions[emailId] = {"startup_name": normalized_startup_name}
 
     return JSONResponse({"status": "ok", "message": "Files uploaded & voice agent is preparing questions."})
 
@@ -2514,8 +2524,9 @@ async def connect(sid, environ, auth):
         await sio.enter_room(sid, user_email)
         # If a first question is pending, emit now
         if pending_first_questions.get(user_email):
-            await emit_next_question(user_email)
-            pending_first_questions.pop(user_email)
+            startup_info = pending_first_questions.pop(user_email)
+            startup_name = startup_info.get("startup_name", "Unknown")
+            await emit_next_question(user_email, startup_name)
 
 @sio.event
 async def disconnect(sid):
@@ -2526,8 +2537,17 @@ async def receive_answer(sid, data):
     answer = data.get("answer")
     user_email = data.get("user_email")
     key = data.get("key")
+    startup_name = data.get("startup_name")  # may be None
+
     if not answer or not user_email or not key:
         return
+
+    # fallback if startup_name is None
+    if not startup_name:
+        startup_name = "Unknown"
+
+    normalized = startup_name.strip().lower().replace(" ", "")
+
     fill_json(filler_agent.structured_json, key, answer)
     filler_agent.questions.pop(key, None)
-    await emit_next_question(user_email)
+    await emit_next_question(user_email, normalized)
