@@ -207,6 +207,10 @@ Rules:
 """
 )
 
+# Normalize startup name from AI
+def normalize_name(name: str) -> str:
+    return "".join(name.lower().split())  # removes spaces and lowercases
+
 # Filler Agent
 class FillerAgent(Agent):
     structured_json: Dict[str, Any] = {}
@@ -807,10 +811,64 @@ try:
 except Exception:
     print("ℹ️ 'FounderDetails' collection already exists.")
 
+# try:
+#     db.create_collection(
+#         "StartupDetails",
+#         validator={
+#             "$jsonSchema": {
+#                 "bsonType": "object",
+#                 "required": [
+#                     "startupName",
+#                     "registeredName",
+#                     "incorporationMonth",
+#                     "incorporationYear",
+#                     "about",
+#                     "emailId",
+#                     "uid",
+#                     "createdAt"
+#                 ],
+#                 "properties": {
+#                     "startupName": {"bsonType": "string"},
+#                     "registeredName": {"bsonType": "string"},
+#                     "incorporationMonth": {"bsonType": "string"},
+#                     "incorporationYear": {"bsonType": "string"},
+#                     "about": {"bsonType": "string"},
+
+#                     # Founder identity
+#                     "emailId": {"bsonType": "string"},
+#                     "uid": {"bsonType": "string"},
+
+#                     # Uploaded Files Section
+#                     "uploadedFiles": {
+#                         "bsonType": "array",
+#                         "items": {
+#                             "bsonType": "object",
+#                             "required": ["fileName", "gcsUrl"],
+#                             "properties": {
+#                                 "fileName": {"bsonType": "string"},
+#                                 "gcsUrl": {"bsonType": "string"},
+#                                 "uploadedAt": {"bsonType": "date"}
+#                             }
+#                         }
+#                     },
+
+#                     "createdAt": {"bsonType": "date"},
+#                     "updatedAt": {"bsonType": "date"},
+#                 },
+#             }
+#         },
+#     )
+#     print("✅ 'StartupDetails' collection created with updated schema.")
+# except Exception:
+#     print("ℹ️ 'StartupDetails' collection already exists.")
+
+# ---------------------------
+# 2️⃣ Update schema validation
+# ---------------------------
 try:
-    db.create_collection(
-        "StartupDetails",
-        validator={
+    db.command({
+        "collMod": "StartupDetails",
+        "validator": {
             "$jsonSchema": {
                 "bsonType": "object",
                 "required": [
@@ -848,15 +906,27 @@ try:
                         }
                     },
 
+                    # BigQuery Analysis Data
+                    "bigqueryData": {
+                        "bsonType": "object",
+                        "properties": {
+                            "financial_data": {"bsonType": "string"},
+                            "team_data": {"bsonType": "string"},
+                            "market_data": {"bsonType": "string"},
+                            "first_memo": {"bsonType": "string"}
+                        }
+                    },
+
                     "createdAt": {"bsonType": "date"},
                     "updatedAt": {"bsonType": "date"},
-                },
+                }
             }
         },
-    )
-    print("✅ 'StartupDetails' collection created with updated schema.")
-except Exception:
-    print("ℹ️ 'StartupDetails' collection already exists.")
+        "validationLevel": "moderate"  # Allows existing documents without new fields
+    })
+    print("✅ 'StartupDetails' collection schema updated successfully!")
+except Exception as e:
+    print(f"❌ Failed to update schema: {e}")
 
 try:
     db.create_collection(
@@ -1398,12 +1468,19 @@ async def add_startup_details(request: FastAPIRequest, data: StartupDetails):
     #     return {"message": "Startup already exists", "startup_id": str(existing["_id"])}
 
     # ✅ Check unique combination of founder + startupName
-    existing = startup_collection.find_one({"emailId": email, "startupName": data.startupName})
+    normalized_name = normalize_name(data.startupName)
+    # existing = startup_collection.find_one({"emailId": email, "startupName": data.startupName})
+    # Check if startup already exists
+    existing = startup_collection.find_one({
+        "emailId": email,
+        "startupName": {"$regex": f"^{normalized_name}$", "$options": "i"}
+    })
     if existing:
         return {"message": "Startup already exists", "startup_id": str(existing["_id"])}
 
     startup_doc = data.dict()
     startup_doc["uid"] = uid
+    startup_doc["startupName"] = normalized_name
     startup_doc["emailId"] = email  # auto-set from logged-in user
     startup_doc["createdAt"] = datetime.utcnow()
 
@@ -2074,6 +2151,8 @@ async def run_agent_async(agent, user_id, session_id, content):
             final_output = event.content
     return final_output
 
+
+
 async def emit_next_question(user_email):
     if filler_agent.questions:
         key, question = next(iter(filler_agent.questions.items()))
@@ -2095,6 +2174,70 @@ async def emit_next_question(user_email):
         # Insert ALL data into BigQuery
         insert_success = await insert_into_bigquery(user_email, startup_name,final_data, agent_analyses)
         
+
+        # # ✅ Insert / update MongoDB document with BigQuery data
+        # db.StartupDetails.update_one(
+        #     {"emailId": user_email, "startupName": startup_name},
+        #     {
+        #         "$set": {
+        #             "bigqueryData": {
+        #                 "financial_data": agent_analyses.get("financial_analysis"),
+        #                 "team_data": agent_analyses.get("team_analysis"),
+        #                 "market_data": agent_analyses.get("market_analysis"),
+        #                 "first_memo": agent_analyses.get("investment_memo")
+        #             },
+        #             "updatedAt": datetime.utcnow()
+        #         }
+        #     },
+            
+        # )
+        normalized_startup_name = normalize_name(startup_name)
+        # existing_doc = db.StartupDetails.find_one({"emailId": user_email, "startupName": startup_name})
+
+        # Fetch the existing document (case + space insensitive)
+        existing_doc = db.StartupDetails.find_one({
+            "emailId": user_email,
+            "startupName": {"$regex": f"^{normalized_startup_name}$", "$options": "i"}
+        })
+        # update_fields = {
+        #     "bigqueryData": {
+        #         "financial_data": agent_analyses.get("financial_analysis"),
+        #         "team_data": agent_analyses.get("team_analysis"),
+        #         "market_data": agent_analyses.get("market_analysis"),
+        #         "first_memo": agent_analyses.get("investment_memo")
+        #     },
+        #     "updatedAt": datetime.utcnow()
+        # }
+        update_fields = {
+            "bigqueryData": {
+                "financial_data": json.dumps(agent_analyses.get("financial_analysis")),
+                "team_data": json.dumps(agent_analyses.get("team_analysis")),
+                "market_data": json.dumps(agent_analyses.get("market_analysis")),
+                "first_memo": json.dumps(agent_analyses.get("investment_memo"))
+            },
+            "updatedAt": datetime.utcnow()
+        }
+
+# Add missing required fields if not present
+        required_fields = ["registeredName", "incorporationMonth", "incorporationYear", "about", "uid", "createdAt"]
+        for field in required_fields:
+            if field not in existing_doc:
+                update_fields[field] = "" if field != "createdAt" else datetime.utcnow()
+
+        # db.StartupDetails.update_one(
+        #     {"emailId": user_email, "startupName": startup_name},
+        #     {"$set": update_fields}
+        # )
+
+        # Update the MongoDB document
+        db.StartupDetails.update_one(
+            {
+                "emailId": user_email,
+                "startupName": {"$regex": f"^{normalized_startup_name}$", "$options": "i"}
+            },
+            {"$set": update_fields}
+        )
+
         # Send success message to frontend with all analyses
         await sio.emit("final_json", {
             "status": "success", 
@@ -2122,6 +2265,8 @@ async def validate_and_prepare_bq_data(user_email: str, startup_name: str,struct
     # Validate required fields
     if not user_email:
         raise ValueError("user_email is required")
+    if not startup_name:
+        raise ValueError("startup_name is required")
     
     # Prepare the record with proper error handling
     record = {
@@ -2243,6 +2388,7 @@ async def upload_and_analyze(
     emailId: str = Form(...),
     startupName: str = Form(...)
 ):
+    normalized_name = normalize_name(startupName)
     # startupName=startupName.lower()
     bucket = storage_client.bucket(BUCKET_NAME)
     file_paths = []
@@ -2250,7 +2396,7 @@ async def upload_and_analyze(
 
     # ✅ Upload files to GCS under: emailId/startupName/<file>
     for file in files:
-        blob_name = f"{emailId}/{startupName}/{file.filename}"
+        blob_name = f"{emailId}/{normalized_name}/{file.filename}"
         blob = bucket.blob(blob_name)
 
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
@@ -2270,16 +2416,67 @@ async def upload_and_analyze(
             "gcsUrl": f"https://storage.googleapis.com/{BUCKET_NAME}/{encoded_blob_name}"
         })
 
+    # existing_doc = db.StartupDetails.find_one({"emailId": emailId, "startupName": startupName})
+
+    # ✅ Fetch existing document using normalized name
+    existing_doc = db.StartupDetails.find_one({
+        "emailId": emailId,
+        "startupName": normalized_name
+    })
+    
+    created_at = existing_doc["createdAt"] if existing_doc else datetime.utcnow()
+    registered_name = existing_doc.get("registeredName", startupName) if existing_doc else startupName
+    inc_month = existing_doc.get("incorporationMonth", "") if existing_doc else ""
+    inc_year = existing_doc.get("incorporationYear", "") if existing_doc else ""
+    about_text = existing_doc.get("about", "") if existing_doc else ""
+    uid_val = existing_doc.get("uid", "") if existing_doc else ""
+
+
     # ✅ Store file metadata in MongoDB
+    # db.StartupDetails.update_one(
+    #     {"emailId": emailId, "startupName": startupName},
+    #     {
+    #         "$push": {"uploadedFiles": {"$each": uploaded_files_info}},
+    #         "$set": {"updatedAt": datetime.utcnow()}
+    #     },
+    #     upsert=True  # ✅ THIS IS THE IMPORTANT FIX
+        
+    # )
+
+    # db.StartupDetails.update_one(
+    # {"emailId": emailId, "startupName": startupName},
+    # {
+    #     "$push": {"uploadedFiles": {"$each": uploaded_files_info}},
+    #     "$set": {
+    #         "updatedAt": datetime.utcnow(),
+    #         "createdAt": created_at,
+    #         "registeredName": registered_name,
+    #         "incorporationMonth": inc_month,
+    #         "incorporationYear": inc_year,
+    #         "about": about_text,
+    #         "uid": uid_val
+    #     }
+    # },
+#     # upsert=True
+# )
+    # ✅ Update MongoDB with uploaded files and maintain required fields
     db.StartupDetails.update_one(
-        {"emailId": emailId, "startupName": startupName},
+        {"emailId": emailId, "startupName": normalized_name},
         {
             "$push": {"uploadedFiles": {"$each": uploaded_files_info}},
-            "$set": {"updatedAt": datetime.utcnow()}
+            "$set": {
+                "updatedAt": datetime.utcnow(),
+                "createdAt": created_at,
+                "registeredName": registered_name,
+                "incorporationMonth": inc_month,
+                "incorporationYear": inc_year,
+                "about": about_text,
+                "uid": uid_val
+            }
         },
-        upsert=True  # ✅ THIS IS THE IMPORTANT FIX
-        
+        upsert=True
     )
+
 
     # -------------------- AI AGENT EXECUTION --------------------
 
