@@ -23,7 +23,7 @@ from google.cloud import bigquery
 import vertexai
 from vertexai.generative_models import GenerativeModel
 import asyncio
-import datetime
+# import datetime
 from google import genai
 
 
@@ -53,7 +53,7 @@ from datetime import datetime, timedelta,time
 import socketio
 import json
 import pytz
-from datetime import datetime
+# from datetime import datetime
 from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
 
@@ -1393,7 +1393,12 @@ async def add_startup_details(request: FastAPIRequest, data: StartupDetails):
     print("Email",email)
 
     # Check if startup for this email already exists
-    existing = startup_collection.find_one({"emailId": email})
+    # existing = startup_collection.find_one({"emailId": email})
+    # if existing:
+    #     return {"message": "Startup already exists", "startup_id": str(existing["_id"])}
+
+    # ✅ Check unique combination of founder + startupName
+    existing = startup_collection.find_one({"emailId": email, "startupName": data.startupName})
     if existing:
         return {"message": "Startup already exists", "startup_id": str(existing["_id"])}
 
@@ -1402,12 +1407,31 @@ async def add_startup_details(request: FastAPIRequest, data: StartupDetails):
     startup_doc["emailId"] = email  # auto-set from logged-in user
     startup_doc["createdAt"] = datetime.utcnow()
 
+
     result = startup_collection.insert_one(startup_doc)
     return {"message": "Startup details saved", "startup_id": str(result.inserted_id)}
 
 # -------------------------
 # Get Startup Details by Email
 # -------------------------
+# @app.get("/api/startup-details")
+# def get_startup_details(request: FastAPIRequest):
+#     auth_header = request.headers.get("Authorization")
+#     if not auth_header or not auth_header.startswith("Bearer "):
+#         raise HTTPException(status_code=401, detail="Missing Firebase token")
+
+#     token = auth_header.split(" ")[1]
+#     decoded_token = verify_firebase_token(token)
+#     email = decoded_token.get("email")  # Get email from logged-in user
+
+#     startup = startup_collection.find_one({"emailId": email})
+#     if not startup:
+#         raise HTTPException(status_code=404, detail="Startup not found")
+
+#     startup["_id"] = str(startup["_id"])
+#     return startup
+
+
 @app.get("/api/startup-details")
 def get_startup_details(request: FastAPIRequest):
     auth_header = request.headers.get("Authorization")
@@ -1416,14 +1440,18 @@ def get_startup_details(request: FastAPIRequest):
 
     token = auth_header.split(" ")[1]
     decoded_token = verify_firebase_token(token)
-    email = decoded_token.get("email")  # Get email from logged-in user
+    email = decoded_token.get("email")  # Get email of logged-in founder
 
-    startup = startup_collection.find_one({"emailId": email})
-    if not startup:
-        raise HTTPException(status_code=404, detail="Startup not found")
+    startups = list(startup_collection.find({"emailId": email}))  # ✅ Fetch ALL startups
 
-    startup["_id"] = str(startup["_id"])
-    return startup
+    if not startups:
+        return []  # Return empty list if none yet
+
+    # Convert ObjectId → string
+    for s in startups:
+        s["_id"] = str(s["_id"])
+
+    return startups  # ✅ return list
 
 @app.get("/api/startups")
 def get_startups():
@@ -2063,8 +2091,9 @@ async def emit_next_question(user_email):
 
         print("&&&&&&&&&&&&&&&&&&&& final_agent_analyses &&&&&&&&&&&&&&&&",agent_analyses)
         
+        startup_name = final_data.get("startup_name", "")
         # Insert ALL data into BigQuery
-        insert_success = await insert_into_bigquery(user_email, final_data, agent_analyses)
+        insert_success = await insert_into_bigquery(user_email, startup_name,final_data, agent_analyses)
         
         # Send success message to frontend with all analyses
         await sio.emit("final_json", {
@@ -2077,7 +2106,7 @@ async def emit_next_question(user_email):
 
 
 
-async def validate_and_prepare_bq_data(user_email: str, structured_data: Dict[str, Any], agent_analyses: Dict[str, Any]) -> Dict[str, Any]:
+async def validate_and_prepare_bq_data(user_email: str, startup_name: str,structured_data: Dict[str, Any], agent_analyses: Dict[str, Any]) -> Dict[str, Any]:
     """Validate and prepare data for BigQuery insertion"""
     
     def safe_json_dumps(data):
@@ -2097,8 +2126,9 @@ async def validate_and_prepare_bq_data(user_email: str, structured_data: Dict[st
     # Prepare the record with proper error handling
     record = {
         "founder_email": user_email,
+        "startup_name": startup_name,
         "data": safe_json_dumps(structured_data),
-        "created_at": datetime.datetime.utcnow().isoformat(),
+        "created_at": datetime.utcnow().isoformat(),
         "financial_data": safe_json_dumps(agent_analyses.get("financial_analysis")),
         "team_data": safe_json_dumps(agent_analyses.get("team_analysis")),
         "market_data": safe_json_dumps(agent_analyses.get("market_analysis")),
@@ -2111,12 +2141,12 @@ async def validate_and_prepare_bq_data(user_email: str, structured_data: Dict[st
     
     return record
 
-async def insert_into_bigquery(user_email: str, structured_data: Dict[str, Any], agent_analyses: Dict[str, Any]):
+async def insert_into_bigquery(user_email: str, startup_name: str,structured_data: Dict[str, Any], agent_analyses: Dict[str, Any]):
     """Insert all analysis data into BigQuery with enhanced error handling"""
     
     try:
         # Prepare the data
-        record = await validate_and_prepare_bq_data(user_email, structured_data, agent_analyses)
+        record = await validate_and_prepare_bq_data(user_email, startup_name,structured_data, agent_analyses)
         
         table_id = f"{bq_client.project}.{DATASET}.{TABLE}"
         
@@ -2213,6 +2243,7 @@ async def upload_and_analyze(
     emailId: str = Form(...),
     startupName: str = Form(...)
 ):
+    # startupName=startupName.lower()
     bucket = storage_client.bucket(BUCKET_NAME)
     file_paths = []
     uploaded_files_info = []
@@ -2246,6 +2277,7 @@ async def upload_and_analyze(
             "$push": {"uploadedFiles": {"$each": uploaded_files_info}},
             "$set": {"updatedAt": datetime.utcnow()}
         },
+        upsert=True  # ✅ THIS IS THE IMPORTANT FIX
         
     )
 

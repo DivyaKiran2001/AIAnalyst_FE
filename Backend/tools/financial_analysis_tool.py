@@ -280,12 +280,12 @@ def financial_analysis(structured_data: dict) -> dict:
          
         # Insert the web search results into BigQuery for future use
         #***********************************uncomment later*****************************
-        # if sector and stage:
-        #     insert_success = insert_benchmarks_into_bigquery(sector, stage, web_benchmarks)
-        #     if insert_success:
-        #         web_benchmarks["data_source"] = "web_search_inserted"
-        #     else:
-        #         web_benchmarks["data_source"] = "web_search_failed_insert"
+        if sector and stage:
+            insert_success = insert_benchmarks_into_bigquery(sector, stage, web_benchmarks)
+            if insert_success:
+                web_benchmarks["data_source"] = "web_search_inserted"
+            else:
+                web_benchmarks["data_source"] = "web_search_failed_insert"
         
         web_benchmarks["query_context"] = {
             "sector_used": sector if sector else "not_provided",
