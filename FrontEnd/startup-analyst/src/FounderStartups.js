@@ -70,6 +70,7 @@ import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import FounderNavbar from "./FounderNavbar";
 import { Modal, Button } from "react-bootstrap";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 const BACKEND_URL = "http://localhost:8000";
 
@@ -80,21 +81,56 @@ const FounderStartups = () => {
 
   const [previewUrl, setPreviewUrl] = useState(null);
 
+  // useEffect(() => {
+  //   const fetchStartups = async () => {
+  //     try {
+  //       const res = await fetch(`${BACKEND_URL}/api/startup-details`);
+  //       const data = await res.json();
+  //       const myStartups = data.filter((s) => s.emailId === founderEmail);
+  //       console.log(myStartups);
+  //       setStartups(myStartups);
+  //     } catch (err) {
+  //       console.error("Error fetching startups:", err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchStartups();
+  // }, [founderEmail]);
+
   useEffect(() => {
-    const fetchStartups = async () => {
+    const auth = getAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        console.error("⚠ User not logged in");
+        setLoading(false);
+        return;
+      }
+
       try {
-        const res = await fetch(`${BACKEND_URL}/api/startups`);
+        const token = await user.getIdToken();
+
+        const res = await fetch(`${BACKEND_URL}/api/startup-details`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) throw new Error(`Failed to fetch startups: ${res.status}`);
         const data = await res.json();
-        const myStartups = data.filter((s) => s.emailId === founderEmail);
-        setStartups(myStartups);
+
+        setStartups(data); // ✅ all startups for this user
       } catch (err) {
         console.error("Error fetching startups:", err);
       } finally {
         setLoading(false);
       }
-    };
-    fetchStartups();
-  }, [founderEmail]);
+    });
+
+    // Cleanup on unmount
+    return () => unsubscribe();
+  }, []);
 
   return (
     <>

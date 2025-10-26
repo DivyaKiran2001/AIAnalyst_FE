@@ -19,15 +19,13 @@ const InvestorNavbar = () => {
       }}
     >
       <div className="container-fluid">
-
         {/* ✅ Logo */}
         <a className="navbar-brand d-flex align-items-center fw-bold" href="/">
           <img
             src="https://d1y839zkxnw8vi.cloudfront.net/public/LVX_Final_logo/LV_Primary_RAW.svg"
             alt="LetsVenture Logo"
-            style={{ height: "40px", width: "auto",paddingLeft:"30px" }}
+            style={{ height: "40px", width: "auto", paddingLeft: "30px" }}
           />
-        
         </a>
 
         {/* ✅ Mobile Toggle */}
@@ -43,7 +41,6 @@ const InvestorNavbar = () => {
         {/* ✅ Nav Items */}
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto align-items-center">
-
             <li className="nav-item">
               <a
                 className="nav-link fw-semibold d-flex align-items-center"
@@ -57,7 +54,7 @@ const InvestorNavbar = () => {
             <li className="nav-item">
               <a
                 className="nav-link fw-semibold d-flex align-items-center"
-                href="/deals"
+                href="/investor-deals"
                 style={{ color: "rgb(18, 0, 94)" }}
               >
                 🤝 <span className="ms-2">Deals</span>
@@ -94,10 +91,8 @@ const InvestorNavbar = () => {
                 🚪 <span className="ms-2">Logout</span>
               </button>
             </li>
-
           </ul>
         </div>
-
       </div>
     </nav>
   );
