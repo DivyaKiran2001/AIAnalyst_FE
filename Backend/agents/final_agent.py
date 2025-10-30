@@ -629,7 +629,7 @@ market_analyst_agent = Agent(
 
 
 memo_agent_instruction = """
-You are an **Investment Memo Writer** that creates clear, concise investment summaries.
+You are an *Investment Memo Writer* that creates clear, concise investment summaries.
 
 ## INPUT:
 You receive three analysis reports:
@@ -645,6 +645,7 @@ Extract ONLY the most important insights from each analysis and create a simple,
   "investment_memo": {
     "executive_summary": {
       "company_brief": "2-3 sentence overview",
+      "sector": "sector name from input",
       "investment_rating": "STRONG BUY | BUY | HOLD | PASS",
       "confidence_score": "0-100%",
       "top_3_highlights": ["bullet point", "bullet point", "bullet point"],
@@ -655,7 +656,7 @@ Extract ONLY the most important insights from each analysis and create a simple,
       "score": "X/10",
       "verdict": "what financial analysis concluded",
       "key_metrics": {
-        "annual_revenue": "$X",
+        "monthly_revenue": "$X",
         "growth_rate": "X%",
         "runway": "X months", 
         "ltv_cac_ratio": "X:1"
@@ -705,6 +706,7 @@ PASS: Critical issues in any area
 {
     "executive_summary": {
       "company_brief": "SaaS platform for e-commerce analytics serving 1,200+ merchants",
+      "sector":"SaaS",
       "investment_rating": "BUY",
       "confidence_score": "78%",
       "top_3_highlights": [
@@ -1115,7 +1117,8 @@ class OAuthRequest(BaseModel):
 
 
 # Combine Socket.IO with FastAPI
-sio_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path="ws")
+# sio_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path="ws")
+sio_app = socketio.ASGIApp(sio, app)
 
 import firebase_admin
 from firebase_admin import credentials, auth
@@ -1512,6 +1515,7 @@ async def add_startup_details(request: FastAPIRequest, data: StartupDetails):
 @app.get("/api/startup-details")
 def get_startup_details(request: FastAPIRequest):
     auth_header = request.headers.get("Authorization")
+    print(">>> Auth Header Received:", auth_header)
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Firebase token")
 
@@ -2109,12 +2113,22 @@ async def run_parallel_agents(structured_data: Dict[str, Any], user_email: str):
       try:
         memo_session_id = f"{session_id}_memo"
         await session_service.create_session(app_name=app_name, user_id=user_id, session_id=memo_session_id)
+
+        sector_value = structured_data.get("sector", "Unknown")
+
+        memo_payload = {
+            "sector": sector_value,
+            **analyses  # merge all agent analyses
+        }
+
         
         # Prepare input for memo agent (all three analyses combined)
+
         memo_input = types.Content(
-            role="user", 
-            parts=[types.Part(text=json.dumps(analyses))]
+          role="user", 
+          parts=[types.Part(text=json.dumps(memo_payload))]
         )
+        
         
         # Run memo agent
         memo_result = await run_agent_async(memo_agent, user_id, memo_session_id, memo_input)
