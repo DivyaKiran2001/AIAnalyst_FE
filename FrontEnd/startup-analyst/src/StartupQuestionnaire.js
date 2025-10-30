@@ -97,6 +97,7 @@ const StartupQuestionnaire = ({ userEmail }) => {
     if (!socket) return;
     const lastQuestion = messages.findLast((m) => m.from === "bot" && m.key);
     if (!lastQuestion) return;
+    const startupName = sessionStorage.getItem("startupName"); // ✅ get startupName
 
     // Add user message
     setMessages((prev) => [...prev, { from: "user", text: answer }]);
@@ -106,6 +107,7 @@ const StartupQuestionnaire = ({ userEmail }) => {
       answer,
       user_email: userEmail,
       key: lastQuestion.key,
+      startup_name: startupName,
     });
   };
 

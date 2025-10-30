@@ -128,6 +128,8 @@ const socket = io(BACKEND_URL, { transports: ["websocket", "polling"] });
 const FounderRequests = () => {
   const [investorRequests, setInvestorRequests] = useState([]);
   const [selectedInvestor, setSelectedInvestor] = useState(null);
+  const [selectedStartup, setSelectedStartup] = useState(null);
+
   const [chatMessages, setChatMessages] = useState([]);
   const [text, setText] = useState("");
   const chatEndRef = useRef(null);
@@ -148,23 +150,59 @@ const FounderRequests = () => {
     if (founderEmail) fetchInvestorRequests();
   }, [founderEmail]);
 
-  useEffect(() => {
-    if (!selectedInvestor) return;
-    const participants = [founderEmail, selectedInvestor];
+  // useEffect(() => {
+  //   if (!selectedInvestor) return;
+  //   const participants = [founderEmail, selectedInvestor].sort();
 
-    socket.emit("join_room", { participants });
+  //   socket.emit("join_room", { participants });
+
+  //   fetch(
+  //     `${BACKEND_URL}/api/chat/?participants=${participants
+  //       .map(encodeURIComponent)
+  //       .join("&participants=")}`
+  //   )
+  //     .then((res) => res.json())
+  //     .then((data) => setChatMessages(data.messages || []))
+  //     .catch((err) => console.error(err));
+
+  //   // socket.on("receive_message", (msg) => {
+  //   //   if (participants.includes(msg.senderId)) {
+  //   //     setChatMessages((prev) => [...prev, msg]);
+  //   //   }
+  //   // });
+  //   socket.on("receive_message", (msg) => {
+  //     setChatMessages((prev) => [...prev, msg]);
+  //   });
+
+  //   return () => {
+  //     socket.off("receive_message");
+  //   };
+  // }, [selectedInvestor, founderEmail]);
+  useEffect(() => {
+    if (!selectedInvestor || !selectedStartup) return;
+
+    const participants = [founderEmail, selectedInvestor].sort();
+    const roomId = `${participants.join("_")}_${selectedStartup}`; // ✅ unique per startup
+
+    socket.emit("join_room", {
+      roomId,
+      participants,
+      startupName: selectedStartup,
+    });
 
     fetch(
       `${BACKEND_URL}/api/chat/?participants=${participants
         .map(encodeURIComponent)
-        .join("&participants=")}`
+        .join("&participants=")}&startupName=${encodeURIComponent(
+        selectedStartup
+      )}`
     )
       .then((res) => res.json())
       .then((data) => setChatMessages(data.messages || []))
       .catch((err) => console.error(err));
 
     socket.on("receive_message", (msg) => {
-      if (participants.includes(msg.senderId)) {
+      if (msg.startupName === selectedStartup) {
         setChatMessages((prev) => [...prev, msg]);
       }
     });
@@ -172,19 +210,19 @@ const FounderRequests = () => {
     return () => {
       socket.off("receive_message");
     };
-  }, [selectedInvestor, founderEmail]);
+  }, [selectedInvestor, selectedStartup, founderEmail]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  const handleResponse = async (investorEmail, action) => {
+  const handleResponse = async (investorEmail, action, startupName) => {
     try {
       if (action === "accept") {
         await fetch(`${BACKEND_URL}/api/interests/accept`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ founderEmail, investorEmail }),
+          body: JSON.stringify({ founderEmail, investorEmail, startupName }),
         });
         alert("✅ Interest accepted. You can now chat with the investor.");
       } else {
@@ -209,7 +247,8 @@ const FounderRequests = () => {
       senderId: founderEmail,
       text,
       timestamp: new Date().toISOString(),
-      participants: [founderEmail, selectedInvestor],
+      participants: [founderEmail, selectedInvestor].sort(),
+      startupName: selectedStartup, // ✅ include startup
     };
     socket.emit("send_message", msg);
     setChatMessages((prev) => [...prev, msg]);
@@ -282,7 +321,10 @@ const FounderRequests = () => {
                     color: "rgb(18,0,94)",
                     cursor: "pointer",
                   }}
-                  onClick={() => setSelectedInvestor(req.investorEmail)}
+                  onClick={() => {
+                    setSelectedInvestor(req.investorEmail);
+                    setSelectedStartup(req.startupName); // ✅ capture startup name
+                  }}
                 >
                   <div>
                     <h6 className="mb-1 fw-bold">{req.investorEmail}</h6>
@@ -328,7 +370,11 @@ const FounderRequests = () => {
                       <button
                         className="btn btn-success btn-sm"
                         onClick={() =>
-                          handleResponse(req.investorEmail, "accept")
+                          handleResponse(
+                            req.investorEmail,
+                            "accept",
+                            req.startupName
+                          )
                         }
                       >
                         Accept
@@ -336,7 +382,11 @@ const FounderRequests = () => {
                       <button
                         className="btn btn-outline-danger btn-sm"
                         onClick={() =>
-                          handleResponse(req.investorEmail, "reject")
+                          handleResponse(
+                            req.investorEmail,
+                            "reject",
+                            req.startupName
+                          )
                         }
                       >
                         Reject
@@ -360,12 +410,17 @@ const FounderRequests = () => {
           >
             {selectedInvestor ? (
               <>
-                <h5
+                {/* <h5
                   className="text-center mb-3 fw-bold"
                   style={{ color: "rgb(18,0,94)" }}
                 >
                   {selectedInvestor}
+                </h5> */}
+                <h5 className="text-center mb-3 fw-bold">
+                  {selectedInvestor} —{" "}
+                  <span style={{ color: "#666" }}>{selectedStartup}</span>
                 </h5>
+
                 <div
                   style={{
                     flexGrow: 1,

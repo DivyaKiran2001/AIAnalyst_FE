@@ -148,16 +148,18 @@ const InvestorDashboard = () => {
   };
 
   // Chat after acceptance
-  const handleChat = (founderEmail) => {
+  const handleChat = (founderEmail, startupName) => {
     const participants = [founderEmail, investorEmail];
-    navigate("/chat", { state: { participants } });
+    navigate("/chat", { state: { participants, startupName } });
   };
 
   // Check interest status for each startup
-  const getInterestStatus = (founderEmail) => {
+  const getInterestStatus = (founderEmail, startupName) => {
     const record = interests.find(
       (i) =>
-        i.founderEmail === founderEmail && i.investorEmail === investorEmail
+        i.founderEmail === founderEmail &&
+        i.investorEmail === investorEmail &&
+        i.startupName === startupName // ✅ Added this line
     );
     return record ? record.status : null;
   };
@@ -252,7 +254,10 @@ const InvestorDashboard = () => {
             ) : (
               <div className="d-flex flex-column gap-4">
                 {startups.map((startup) => {
-                  const status = getInterestStatus(startup.emailId);
+                  const status = getInterestStatus(
+                    startup.emailId,
+                    startup.startupName
+                  );
                   return (
                     <div
                       key={startup._id}
@@ -285,7 +290,12 @@ const InvestorDashboard = () => {
                               <button
                                 className="btn text-white"
                                 style={{ backgroundColor: "#007bff" }}
-                                onClick={() => handleChat(startup.emailId)}
+                                onClick={() =>
+                                  handleChat(
+                                    startup.emailId,
+                                    startup.startupName
+                                  )
+                                }
                               >
                                 Chat
                               </button>

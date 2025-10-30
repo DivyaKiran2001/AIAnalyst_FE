@@ -2,13 +2,17 @@ import React, { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import io from "socket.io-client";
 
-const socket = io(" http://localhost:3000", {
+const socket = io("http://localhost:8000", {
   transports: ["websocket", "polling"],
+  auth: {
+    email: sessionStorage.getItem("emailId"),
+  },
 });
 
 const ChatPage = () => {
   const location = useLocation();
-  const participants = location.state?.participants || [];
+  const participants = location.state?.participants.sort() || [];
+  const startupName = location.state?.startupName || "unknown_startup";
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const senderId = sessionStorage.getItem("emailId");
@@ -22,14 +26,14 @@ const ChatPage = () => {
   useEffect(() => {
     if (!participants.length) return;
 
-    socket.emit("join_room", { participants });
+    socket.emit("join_room", { participants, startupName });
     console.log(Intl.DateTimeFormat().resolvedOptions());
 
     // Fetch chat history
     fetch(
-      `https://8000-firebase-aianalystfe-1760591860192.cluster-nulpgqge5rgw6rwqiydysl6ocy.cloudworkstations.dev/api/chat/?participants=${participants
+      `http://localhost:8000/api/chat/?participants=${participants
         .map(encodeURIComponent)
-        .join("&participants=")}`
+        .join("&participants=")}&startupName=${encodeURIComponent(startupName)}`
     )
       .then((res) => res.json())
       .then((data) => setMessages(data.messages || []))
@@ -51,6 +55,7 @@ const ChatPage = () => {
       text,
       timestamp: new Date().toISOString(),
       participants,
+      startupName,
     };
     socket.emit("send_message", msg);
     setMessages((prev) => [...prev, msg]); // Optimistic UI

@@ -1,0 +1,189 @@
+.report-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 10px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.header {
+  background: linear-gradient(135deg, #2E86AB, #A23B72);
+  color: #fff;
+  text-align: center;
+  padding: 25px;
+  border-radius: 10px 10px 0 0;
+  margin-bottom: 20px;
+}
+
+.title {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 10px 0 0;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.rating-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  color: #fff;
+  font-weight: bold;
+  margin-top: 15px;
+}
+
+.rating-badge.PASS {
+  background-color: #4CAF50;
+}
+
+.rating-badge.FAIL {
+  background-color: #F44336;
+}
+
+.confidence-score {
+  display: inline-block;
+  background: #FFC107;
+  color: #343A40;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  margin-left: 10px;
+}
+
+.section {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.section-title {
+  color: #2E86AB;
+  border-bottom: 2px solid #F8F9FA;
+  padding-bottom: 10px;
+  font-size: 1.5rem;
+}
+
+.two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .two-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+.highlight-item {
+  border-left: 3px solid #4CAF50;
+  padding-left: 10px;
+}
+
+.risk-item {
+  border-left: 3px solid #F44336;
+  padding-left: 10px;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.metric-card {
+  background: #F8F9FA;
+  border-left: 4px solid #2E86AB;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.metric-value {
+  font-size: 1.5rem;
+  color: #2E86AB;
+  font-weight: bold;
+}
+
+.metric-label {
+  color: #6C757D;
+  font-size: 0.9rem;
+}
+
+.chart-container {
+  width: 100%;
+  height: 300px;
+  margin: 20px 0;
+}
+
+.circular-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.circular-wrapper {
+  position: relative;
+}
+
+.circular-svg {
+  transform: rotate(-90deg);
+}
+
+.circular-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.enhanced-score {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .enhanced-score {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+.recommendation-card.PASS {
+  background: #E8F5E9;
+  border-left: 4px solid #4CAF50;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.recommendation-card.FAIL {
+  background: #FFEBEE;
+  border-left: 4px solid #F44336;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.next-steps-list {
+  background: #F8F9FA;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+.tooltip-box {
+  background: #fff;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}

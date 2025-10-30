@@ -953,18 +953,54 @@ except Exception:
 
 
 # ----------------- Create Chats collection with schema validation -----------------
+# try:
+#     db.create_collection(
+#         "Chats",
+#         validator={
+#             "$jsonSchema": {
+#                 "bsonType": "object",
+#                 "required": ["participants", "messages", "createdAt"],
+#                 "properties": {
+#                     "participants": {
+#                         "bsonType": "array",
+#                         "minItems": 2,
+#                         "items": {"bsonType": "string"}  # emails or UIDs
+#                     },
+#                     "messages": {
+#                         "bsonType": "array",
+#                         "items": {
+#                             "bsonType": "object",
+#                             "required": ["senderId", "text", "timestamp"],
+#                             "properties": {
+#                                 "senderId": {"bsonType": "string"},
+#                                 "text": {"bsonType": "string"},
+#                                 "timestamp": {"bsonType": "date"},
+#                             },
+#                         },
+#                     },
+#                     "createdAt": {"bsonType": "date"},
+#                 },
+#             }
+#         },
+#     )
+#     print("✅ 'Chats' collection created with schema validation")
+# except Exception:
+#     print("ℹ️ 'Chats' collection already exists")
+
+
 try:
     db.create_collection(
         "Chats",
         validator={
             "$jsonSchema": {
                 "bsonType": "object",
-                "required": ["participants", "messages", "createdAt"],
+                "required": ["participants", "messages", "createdAt", "startupName"],
                 "properties": {
+                    "startupName": {"bsonType": "string"},
                     "participants": {
                         "bsonType": "array",
                         "minItems": 2,
-                        "items": {"bsonType": "string"}  # emails or UIDs
+                        "items": {"bsonType": "string"}
                     },
                     "messages": {
                         "bsonType": "array",
@@ -974,7 +1010,7 @@ try:
                             "properties": {
                                 "senderId": {"bsonType": "string"},
                                 "text": {"bsonType": "string"},
-                                "timestamp": {"bsonType": "date"},
+                                "timestamp": {"bsonType": "date"}
                             },
                         },
                     },
@@ -983,9 +1019,10 @@ try:
             }
         },
     )
-    print("✅ 'Chats' collection created with schema validation")
+    print("✅ 'Chats' collection created with startupName field")
 except Exception:
     print("ℹ️ 'Chats' collection already exists")
+
 
 # ----------------- Create Meetings Collection with Schema -----------------
 try:
@@ -1100,6 +1137,7 @@ class Interest(BaseModel):
 class AcceptInterest(BaseModel):
     founderEmail: str
     investorEmail: str
+    startupName: str 
 class MeetingRequest(BaseModel):
     startupName: str
     founderEmail: EmailStr
@@ -1759,65 +1797,126 @@ async def connect(sid, environ):
 async def disconnect(sid):
     print(f"Client disconnected: {sid}")
 
+# @sio.event
+# async def join_room(sid, data):
+#     """
+#     User joins a room
+#     data: { "participants": ["founderEmail", "investorEmail"] }
+#     """
+#     participants = sorted(data["participants"])  # sort to make room unique
+#     room = "_".join(participants)
+#     await sio.save_session(sid, {"room": room})
+#     sio.enter_room(sid, room)
+#     print(f"{sid} joined room {room}")
+
+# @sio.event
+# async def send_message(sid, data):
+#     participants = sorted(data["participants"])
+#     room = "_".join(participants)
+
+#     # ✅ Store as datetime for MongoDB
+#     message_doc = {
+#         "senderId": data["senderId"],
+#         "text": data["text"],
+#         "timestamp": datetime.utcnow()  # <-- keep as datetime
+#     }
+
+#     # Save to MongoDB
+#     chat_doc = chat_collection.find_one({"participants": participants})
+#     if chat_doc:
+#         chat_collection.update_one(
+#             {"participants": participants},
+#             {"$push": {"messages": message_doc}}
+#         )
+#     else:
+#         chat_collection.insert_one({
+#             "participants": participants,
+#             "messages": [message_doc],
+#             "createdAt": datetime.utcnow()
+#         })
+
+#     # ✅ Emit to clients (convert datetime to ISO string)
+#     message_emit = message_doc.copy()
+#     message_emit["timestamp"] = message_emit["timestamp"].isoformat()
+#     await sio.emit("receive_message", message_emit, room=room)
+
+
+# # ----------------- API to fetch chat history -----------------
+# from typing import List
+# from fastapi import Query
+
+
+# @app.get("/api/chat/")
+# def get_chat_history(participants: List[str] = Query(...)):
+#     participants_sorted = sorted(participants)
+#     chat = chat_collection.find_one({"participants": participants_sorted})
+#     if chat:
+#         chat["_id"] = str(chat["_id"])
+#         for msg in chat["messages"]:
+#             msg["timestamp"] = msg["timestamp"].isoformat()+ "Z" # convert datetime -> string
+#         return chat
+#     return {"participants": participants_sorted, "messages": []}
+
+
 @sio.event
 async def join_room(sid, data):
     """
-    User joins a room
-    data: { "participants": ["founderEmail", "investorEmail"] }
+    data: { "participants": ["founderEmail", "investorEmail"], "startupName": "StartupName" }
     """
-    participants = sorted(data["participants"])  # sort to make room unique
-    room = "_".join(participants)
+    participants = sorted(data["participants"])
+    startup_name = data.get("startupName", "unknown_startup")
+    room = "_".join(participants + [startup_name])
     await sio.save_session(sid, {"room": room})
     sio.enter_room(sid, room)
     print(f"{sid} joined room {room}")
 
+
 @sio.event
 async def send_message(sid, data):
     participants = sorted(data["participants"])
-    room = "_".join(participants)
+    startup_name = data.get("startupName", "unknown_startup")
+    room = "_".join(participants + [startup_name])
 
-    # ✅ Store as datetime for MongoDB
     message_doc = {
         "senderId": data["senderId"],
         "text": data["text"],
-        "timestamp": datetime.utcnow()  # <-- keep as datetime
+        "timestamp": datetime.utcnow()
     }
 
-    # Save to MongoDB
-    chat_doc = chat_collection.find_one({"participants": participants})
+    # Save to MongoDB with startupName
+    chat_doc = chat_collection.find_one({"participants": participants, "startupName": startup_name})
     if chat_doc:
         chat_collection.update_one(
-            {"participants": participants},
+            {"participants": participants, "startupName": startup_name},
             {"$push": {"messages": message_doc}}
         )
     else:
         chat_collection.insert_one({
             "participants": participants,
+            "startupName": startup_name,
             "messages": [message_doc],
             "createdAt": datetime.utcnow()
         })
 
-    # ✅ Emit to clients (convert datetime to ISO string)
     message_emit = message_doc.copy()
     message_emit["timestamp"] = message_emit["timestamp"].isoformat()
     await sio.emit("receive_message", message_emit, room=room)
 
 
-# ----------------- API to fetch chat history -----------------
 from typing import List
 from fastapi import Query
 
-
 @app.get("/api/chat/")
-def get_chat_history(participants: List[str] = Query(...)):
+def get_chat_history(participants: List[str] = Query(...), startupName: str = Query(...)):
     participants_sorted = sorted(participants)
-    chat = chat_collection.find_one({"participants": participants_sorted})
+    chat = chat_collection.find_one({"participants": participants_sorted, "startupName": startupName})
     if chat:
         chat["_id"] = str(chat["_id"])
         for msg in chat["messages"]:
-            msg["timestamp"] = msg["timestamp"].isoformat()+ "Z" # convert datetime -> string
+            msg["timestamp"] = msg["timestamp"].isoformat() + "Z"
         return chat
     return {"participants": participants_sorted, "messages": []}
+
 
 # ----------------- Example MongoDB document -----------------
 """
@@ -1871,17 +1970,32 @@ def get_interests(investorEmail: str):
 
 
 
+# @app.post("/api/interests/accept")
+# def accept_interest(data: AcceptInterest):
+#     result = interests_collection.update_one(
+#         {"founderEmail": data.founderEmail, "investorEmail": data.investorEmail},
+#         {"$set": {"status": "accepted"}}
+#     )
+
+#     if result.matched_count == 0:
+#         raise HTTPException(status_code=404, detail="Interest not found")
+
+#     return {"message": "Interest accepted"}
 @app.post("/api/interests/accept")
 def accept_interest(data: AcceptInterest):
     result = interests_collection.update_one(
-        {"founderEmail": data.founderEmail, "investorEmail": data.investorEmail},
+        {
+            "founderEmail": data.founderEmail,
+            "investorEmail": data.investorEmail,
+            "startupName": data.startupName,  # ✅ Include startupName
+        },
         {"$set": {"status": "accepted"}}
     )
 
     if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Interest not found")
+        raise HTTPException(status_code=404, detail="Interest not found for this startup")
 
-    return {"message": "Interest accepted"}
+    return {"message": "Interest accepted successfully"}
 
 
 

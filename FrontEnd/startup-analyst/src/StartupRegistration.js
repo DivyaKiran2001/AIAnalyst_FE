@@ -114,6 +114,8 @@ export default function StartupRegistration() {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      // ✅ Store startupName AFTER successful API calls
+      sessionStorage.setItem("startupName", formData.startupName);
       // Move to Step 3 (File Upload)
       setCurrentStep(3);
 

@@ -31,6 +31,7 @@ import FounderNavbar from "./FounderNavbar";
 import FounderRequests from "./FounderRequests";
 import FounderStartups from "./FounderStartups";
 import InvestorDeals from "./InvestorDeals";
+import GenerateReport from "./GenerateReport";
 function App() {
   const [userEmail, setUserEmail] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -145,6 +146,7 @@ function App() {
       <Route path="/investor-deals" element={<InvestorDeals />} />
       <Route path="/investor-home" element={<InvestorHome />} />
       <Route path="/interested-meetings" element={<InvestorDashboard />} />
+      <Route path="/generate-report" element={<GenerateReport />} />
 
       {/* Startup Registration */}
       <Route path="/startup-registration" element={<StartupRegistration />} />

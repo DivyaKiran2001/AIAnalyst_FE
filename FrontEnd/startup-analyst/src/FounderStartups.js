@@ -99,6 +99,10 @@ const FounderStartups = () => {
   // }, [founderEmail]);
 
   useEffect(() => {
+    console.log("Session email:", founderEmail);
+  }, [founderEmail]);
+
+  useEffect(() => {
     const auth = getAuth();
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -107,9 +111,11 @@ const FounderStartups = () => {
         setLoading(false);
         return;
       }
+      console.log(founderEmail);
+      // sessionStorage.setItem("emailId", user.email);
 
       try {
-        const token = await user.getIdToken();
+        const token = await user.getIdToken(true);
 
         const res = await fetch(`${BACKEND_URL}/api/startup-details`, {
           headers: {
