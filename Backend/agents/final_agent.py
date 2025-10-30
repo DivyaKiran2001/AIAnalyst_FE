@@ -655,7 +655,7 @@ Extract ONLY the most important insights from each analysis and create a simple,
       "score": "X/10",
       "verdict": "what financial analysis concluded",
       "key_metrics": {
-        "monthly_revenue": "$X",
+        "annual_revenue": "$X",
         "growth_rate": "X%",
         "runway": "X months", 
         "ltv_cac_ratio": "X:1"
