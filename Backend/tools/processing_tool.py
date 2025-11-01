@@ -15,6 +15,7 @@ from fastapi import HTTPException
 load_dotenv(r"D:\GenAI_Exchange\AIAnalyst_FE\Backend\.env")
 
 
+#firebase
 # Check if loaded correctly
 cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 print("GOOGLE_APPLICATION_CREDENTIALS:", cred_path)  # debug, remove later
