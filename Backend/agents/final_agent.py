@@ -1156,6 +1156,7 @@ class OAuthRequest(BaseModel):
 
 # Combine Socket.IO with FastAPI
 # sio_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path="ws")
+# sio_app = socketio.ASGIApp(sio, other_asgi_app=app,socketio_path="ws")
 sio_app = socketio.ASGIApp(sio, app)
 
 import firebase_admin
