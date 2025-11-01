@@ -319,7 +319,7 @@ class RespondMeeting(BaseModel):
     meetingId: str
     action: str  # accept or decline
 
-
+#sample models
 class OAuthRequest(BaseModel):
     email: EmailStr
 # ----------------- Socket.IO Server -----------------
