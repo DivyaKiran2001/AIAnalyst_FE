@@ -18,5 +18,7 @@ EXPOSE 8080
 ENV PORT=8080
 
 # Run the FastAPI + Socket.IO app
-CMD uvicorn Backend.agents.final_agent:sio_app --host 0.0.0.0 --port 8000 --reload
+# CMD uvicorn Backend.agents.final_agent:sio_app --host 0.0.0.0 --port 8000 --reload
+CMD exec uvicorn Backend.agents.final_agent:sio_app --host 0.0.0.0 --port ${PORT}
+
 

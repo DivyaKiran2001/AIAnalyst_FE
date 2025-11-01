@@ -1167,6 +1167,8 @@ cred = credentials.Certificate(
 firebase_admin.initialize_app(cred)
 
 
+
+
 # ----------------- Helper Functions -----------------
 def check_investor_interest(founder_email, investor_email):
     """Check if investor is allowed to request a meeting."""
