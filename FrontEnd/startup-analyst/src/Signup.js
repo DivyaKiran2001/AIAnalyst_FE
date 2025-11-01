@@ -214,8 +214,8 @@ const AuthPage = () => {
       sessionStorage.setItem("emailId", data.user.email);
 
       // Redirect based on role
-      if (data.user.role === "founder") navigate("/f-dashboard");
-      else if (data.user.role === "investor") navigate("/investor-home");
+      if (data.user.role === "founder") navigate("/founder-registration");
+      else if (data.user.role === "investor") navigate("/investor-deals");
     } catch (err) {
       console.error(err);
       alert(err.message);
@@ -248,8 +248,8 @@ const AuthPage = () => {
       sessionStorage.setItem("emailId", data.user.email);
 
       // Redirect based on role
-      if (data.user.role === "founder") navigate("/f-dashboard");
-      else if (data.user.role === "investor") navigate("/investor-home");
+      if (data.user.role === "founder") navigate("/founder-registration");
+      else if (data.user.role === "investor") navigate("/investor-deals");
     } catch (error) {
       console.error(error);
       alert(error.message);

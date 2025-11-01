@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import InvestorNavbar from "./InvestorNavbar";
+import { DateTime } from "luxon";
 
 const InvestorDashboard = () => {
   const navigate = useNavigate();
@@ -369,7 +370,8 @@ const InvestorDashboard = () => {
                         <div className="fw-semibold text-primary">
                           {m.startupName}
                         </div>
-                        <small className="text-muted">
+
+                        {/* <small className="text-muted">
                           {new Date(m.proposedDateTime).toLocaleString(
                             "en-IN",
                             {
@@ -378,7 +380,26 @@ const InvestorDashboard = () => {
                               timeZone: "Asia/Kolkata",
                             }
                           )}
+                        </small> */}
+                        <small className="text-muted">
+                          {(() => {
+                            const utcDate = new Date(m.proposedDateTime);
+                            const istOffsetMs = 5.5 * 60 * 60 * 1000; // UTC+5:30 in ms
+                            const istDate = new Date(
+                              utcDate.getTime() + istOffsetMs
+                            );
+                            return istDate.toLocaleString("en-IN", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            });
+                          })()}
                         </small>
+
+                        {/* <small className="text-muted">
+                          {DateTime.fromISO(m.proposedDateTime, { zone: "utc" })
+                            .setZone("Asia/Kolkata")
+                            .toFormat("dd MMM yyyy, hh:mm a")}
+                        </small> */}
                         <div className="mt-1">
                           <span
                             className={`badge ${

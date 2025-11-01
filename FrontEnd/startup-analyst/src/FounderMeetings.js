@@ -168,14 +168,29 @@ const FounderMeetings = () => {
                       </strong>{" "}
                       {m.investorEmail}
                     </p>
-                    <p className="mb-1">
+                    {/* <p className="mb-1">
                       <strong style={{ color: "rgb(18, 0, 94)" }}>Time:</strong>{" "}
                       {new Date(m.proposedDateTime).toLocaleString("en-IN", {
                         dateStyle: "medium",
                         timeStyle: "short",
                         timeZone: "Asia/Kolkata",
                       })}
+                    </p> */}
+                    <p className="mb-1">
+                      <strong style={{ color: "rgb(18, 0, 94)" }}>Time:</strong>{" "}
+                      {(() => {
+                        const utcDate = new Date(m.proposedDateTime);
+                        const istOffsetMs = 5.5 * 60 * 60 * 1000; // +5:30 hrs offset
+                        const istDate = new Date(
+                          utcDate.getTime() + istOffsetMs
+                        );
+                        return `${istDate.toLocaleString("en-IN", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })} IST`;
+                      })()}
                     </p>
+
                     <p className="mb-2">
                       <strong style={{ color: "rgb(18, 0, 94)" }}>
                         Status:
@@ -216,7 +231,7 @@ const FounderMeetings = () => {
                       </div>
                     )}
 
-                    {m.status === "accepted" && m.hangoutLink && (
+                    {/* {m.status === "accepted" && m.hangoutLink && (
                       <a
                         href={m.hangoutLink}
                         target="_blank"
@@ -229,7 +244,41 @@ const FounderMeetings = () => {
                       >
                         Join Meet
                       </a>
-                    )}
+                    )} */}
+                    {m.status === "accepted" &&
+                      (() => {
+                        const now = new Date();
+                        const meetingEnd = new Date(m.endTime);
+
+                        // Convert both to IST manually (since backend stores UTC)
+                        const istOffsetMs = 5.5 * 60 * 60 * 1000;
+                        const nowIST = new Date(now.getTime() + istOffsetMs);
+                        const meetingEndIST = new Date(
+                          meetingEnd.getTime() + istOffsetMs
+                        );
+
+                        const isOver = nowIST > meetingEndIST;
+
+                        return (
+                          <>
+                            <a
+                              href={isOver ? undefined : m.hangoutLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`btn btn-outline-dark-blue btn-sm mt-3 ${
+                                isOver ? "disabled" : ""
+                              }`}
+                              style={{
+                                color: isOver ? "gray" : "rgb(18,0,94)",
+                                borderColor: isOver ? "gray" : "rgb(18,0,94)",
+                                pointerEvents: isOver ? "none" : "auto",
+                              }}
+                            >
+                              {isOver ? "Meeting Ended" : "Join Meet"}
+                            </a>
+                          </>
+                        );
+                      })()}
                   </div>
                 </div>
               ))}

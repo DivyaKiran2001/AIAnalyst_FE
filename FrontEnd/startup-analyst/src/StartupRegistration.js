@@ -163,7 +163,7 @@ export default function StartupRegistration() {
           <div className="col-12 col-lg-10 d-flex">
             {/* Vertical Stepper with headers + subheaders */}
             <div className="d-flex flex-column me-4 align-items-start">
-              {[1, 2, 3].map((step) => (
+              {[1, 2, 3, 4].map((step) => (
                 <div
                   key={step}
                   className="d-flex flex-column mb-5 position-relative"
@@ -195,7 +195,9 @@ export default function StartupRegistration() {
                           ? "Personal Details"
                           : step === 2
                           ? "Startup Details"
-                          : "Files"}
+                          : step === 3
+                          ? "Files"
+                          : "Voice Agent"}
                       </div>
                       <div
                         style={{
@@ -208,11 +210,13 @@ export default function StartupRegistration() {
                           ? "Tell us about yourself"
                           : step === 2
                           ? "Tell us about your startup"
-                          : "Upload pitch deck files"}
+                          : step === 3
+                          ? "Upload pitch deck files"
+                          : "Answer questions via voice"}
                       </div>
                     </div>
                   </div>
-                  {step < 3 && (
+                  {step < 4 && (
                     <div
                       style={{
                         position: "absolute",
@@ -453,29 +457,6 @@ export default function StartupRegistration() {
                           </div>
                         )}
                       </div>
-                      {/* <div className="col-md-6">
-                        <label
-                          className="form-label fw-bold"
-                          style={{ color: "rgb(18,0,94)" }}
-                        >
-                          Email *
-                        </label>
-                        <input
-                          type="email"
-                          className={`form-control ${
-                            errors.semailId ? "is-invalid" : ""
-                          }`}
-                          name="semailId"
-                          value={formData.semailId}
-                          onChange={handleInputChange}
-                          placeholder="Enter your email"
-                        />
-                        {errors.semailId && (
-                          <div className="invalid-feedback">
-                            {errors.semailId}
-                          </div>
-                        )}
-                      </div> */}
                       <div className="col-md-6">
                         <label
                           className="form-label fw-bold"
@@ -622,7 +603,14 @@ export default function StartupRegistration() {
               )}
               {/* Step 4: Questionnaire */}
               {currentStep === 4 && (
-                <StartupQuestionnaire userEmail={formData.emailId} />
+                <StartupQuestionnaire
+                  userEmail={formData.emailId}
+                  onComplete={() => {
+                    // ✅ After questionnaire done, auto-navigate or show final message
+                    alert("✅ Registration & voice verification completed!");
+                    navigate("/f-dashboard");
+                  }}
+                />
               )}
             </div>
           </div>

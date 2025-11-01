@@ -41,7 +41,7 @@ const InvestorNavbar = () => {
         {/* ✅ Nav Items */}
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto align-items-center">
-            <li className="nav-item">
+            {/* <li className="nav-item">
               <a
                 className="nav-link fw-semibold d-flex align-items-center"
                 href="/investor-home"
@@ -49,7 +49,7 @@ const InvestorNavbar = () => {
               >
                 🏠 <span className="ms-2">Home</span>
               </a>
-            </li>
+            </li> */}
 
             <li className="nav-item">
               <a
@@ -71,7 +71,7 @@ const InvestorNavbar = () => {
               </a>
             </li>
 
-            <li className="nav-item">
+            {/* <li className="nav-item">
               <a
                 className="nav-link fw-semibold d-flex align-items-center"
                 href="/profile"
@@ -79,7 +79,7 @@ const InvestorNavbar = () => {
               >
                 👤 <span className="ms-2">My Profile</span>
               </a>
-            </li>
+            </li> */}
 
             {/* ✅ Logout */}
             <li className="nav-item ms-lg-3">

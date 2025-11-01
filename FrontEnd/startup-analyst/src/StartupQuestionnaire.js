@@ -14,7 +14,6 @@ const StartupQuestionnaire = ({ userEmail }) => {
 
   useEffect(() => {
     const newSocket = io(SOCKET_SERVER_URL, {
-      path: "/ws",
       auth: { user_email: userEmail },
     });
     setSocket(newSocket);
@@ -48,6 +47,9 @@ const StartupQuestionnaire = ({ userEmail }) => {
         ...prev,
         { from: "bot", text: "✅ Startup details updated successfully!" },
       ]);
+      setTimeout(() => {
+        navigate("/f-dashboard");
+      }, 2000);
     });
 
     return () => {
@@ -142,7 +144,11 @@ const StartupQuestionnaire = ({ userEmail }) => {
         {loading && (
           <div style={{ textAlign: "center", padding: 20 }}>
             <div className="spinner"></div>
-            <p>Preparing your questions...</p>
+            <p>
+              I noticed some important details are missing from your startup
+              profile. I’m just preparing a few quick questions to complete your
+              information — this will only take a moment!
+            </p>
           </div>
         )}
 

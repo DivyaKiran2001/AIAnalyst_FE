@@ -24,7 +24,7 @@ const FounderNavbar = () => {
           <img
             src="https://d1y839zkxnw8vi.cloudfront.net/public/LVX_Final_logo/LV_Primary_RAW.svg"
             alt="LetsVenture Logo"
-            style={{ height: "40px", width: "auto",paddingLeft:"30px" }}
+            style={{ height: "40px", width: "auto", paddingLeft: "30px" }}
           />
         </a>
 
@@ -44,7 +44,7 @@ const FounderNavbar = () => {
         {/* ✅ Nav Links */}
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto align-items-center">
-            <li className="nav-item">
+            {/* <li className="nav-item">
               <a
                 className="nav-link fw-semibold d-flex align-items-center"
                 href="/f-dashboard"
@@ -52,7 +52,7 @@ const FounderNavbar = () => {
               >
                 🏠 <span className="ms-2">Dashboard</span>
               </a>
-            </li>
+            </li> */}
 
             <li className="nav-item">
               <a
@@ -94,7 +94,7 @@ const FounderNavbar = () => {
               </a>
             </li>
 
-            <li className="nav-item">
+            {/* <li className="nav-item">
               <a
                 className="nav-link fw-semibold d-flex align-items-center"
                 href="/founder-profile"
@@ -102,7 +102,7 @@ const FounderNavbar = () => {
               >
                 👤 <span className="ms-2">My Profile</span>
               </a>
-            </li>
+            </li> */}
 
             {/* ✅ Logout Button */}
             <li className="nav-item ms-lg-3">

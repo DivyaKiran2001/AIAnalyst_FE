@@ -4,13 +4,17 @@ import InvestorNavbar from "./InvestorNavbar";
 import { Modal } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { FaFilePdf, FaDownload, FaChartLine } from "react-icons/fa";
+import DealsFilter from "./DealsFilter";
 
 const BACKEND_URL = "http://localhost:8000";
 
 const InvestorDeals = () => {
   const [startups, setStartups] = useState([]);
+  const [filteredStartups, setFilteredStartups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [selectedSector, setSelectedSector] = useState("");
+  const [selectedWeightage, setSelectedWeightage] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,6 +23,7 @@ const InvestorDeals = () => {
         const res = await fetch(`${BACKEND_URL}/api/startups`);
         const data = await res.json();
         setStartups(data);
+        setFilteredStartups(data);
       } catch (err) {
         console.error("Error fetching startups:", err);
       } finally {
@@ -28,6 +33,138 @@ const InvestorDeals = () => {
 
     fetchStartups();
   }, []);
+  console.log(filteredStartups);
+
+  //   // Filter and sort startups based on selections
+  //   useEffect(() => {
+  //     let result = [...startups];
+
+  //     // Filter by sector
+  //     if (selectedSector) {
+  //       result = result.filter((startup) => {
+  //         const startupSector =
+  //           startup.first_memo?.investment_memo?.executive_summary?.sector;
+  //         return startupSector === selectedSector;
+  //       });
+  //     }
+
+  //     // Sort by weightage
+  //     if (selectedWeightage) {
+  //       result.sort((a, b) => {
+  //         let scoreA, scoreB;
+
+  //         switch (selectedWeightage) {
+  //           case "financials":
+  //             scoreA =
+  //               parseFloat(
+  //                 a.first_memo?.investment_memo?.financial_highlights?.score
+  //               ) || 0;
+  //             scoreB =
+  //               parseFloat(
+  //                 b.first_memo?.investment_memo?.financial_highlights?.score
+  //               ) || 0;
+  //             break;
+  //           case "team":
+  //             scoreA =
+  //               parseFloat(
+  //                 a.first_memo?.investment_memo?.team_highlights?.score
+  //               ) || 0;
+  //             scoreB =
+  //               parseFloat(
+  //                 b.first_memo?.investment_memo?.team_highlights?.score
+  //               ) || 0;
+  //             break;
+  //           case "market":
+  //             const confidenceA =
+  //               a.first_memo?.investment_memo?.market_highlights
+  //                 ?.validation_confidence || "0%";
+  //             const confidenceB =
+  //               b.first_memo?.investment_memo?.market_highlights
+  //                 ?.validation_confidence || "0%";
+  //             scoreA = parseFloat(confidenceA.replace("%", "")) || 0;
+  //             scoreB = parseFloat(confidenceB.replace("%", "")) || 0;
+  //             break;
+  //           default:
+  //             return 0;
+  //         }
+
+  //         return scoreB - scoreA; // Descending order (highest first)
+  //       });
+  //     }
+
+  //     setFilteredStartups(result);
+  //   }, [selectedSector, selectedWeightage, startups]);
+  useEffect(() => {
+    let result = [...startups];
+    console.log("Result", result);
+
+    // Safely parse first_memo if it's a JSON string
+    const parseMemo = (memo) => {
+      try {
+        return typeof memo === "string" ? JSON.parse(memo) : memo;
+      } catch (error) {
+        console.error("Error parsing first_memo:", error);
+        return null;
+      }
+    };
+
+    // Filter by sector
+    if (selectedSector) {
+      result = result.filter((startup) => {
+        const parsedMemo = parseMemo(startup?.bigqueryData?.first_memo);
+        const startupSector =
+          parsedMemo?.investment_memo?.executive_summary?.sector;
+        return startupSector === selectedSector;
+      });
+    }
+
+    // Sort by selected weightage
+    if (selectedWeightage) {
+      result.sort((a, b) => {
+        const memoA = parseMemo(a?.bigqueryData?.first_memo);
+        const memoB = parseMemo(b?.bigqueryData?.first_memo);
+
+        let scoreA = 0;
+        let scoreB = 0;
+
+        switch (selectedWeightage) {
+          case "financials":
+            scoreA =
+              parseFloat(memoA?.investment_memo?.financial_highlights?.score) ||
+              0;
+            scoreB =
+              parseFloat(memoB?.investment_memo?.financial_highlights?.score) ||
+              0;
+            break;
+
+          case "team":
+            scoreA =
+              parseFloat(memoA?.investment_memo?.team_highlights?.score) || 0;
+            scoreB =
+              parseFloat(memoB?.investment_memo?.team_highlights?.score) || 0;
+            break;
+
+          case "market":
+            const confidenceA =
+              memoA?.investment_memo?.market_highlights
+                ?.validation_confidence || "0%";
+            const confidenceB =
+              memoB?.investment_memo?.market_highlights
+                ?.validation_confidence || "0%";
+            scoreA = parseFloat(confidenceA.replace("%", "")) || 0;
+            scoreB = parseFloat(confidenceB.replace("%", "")) || 0;
+            break;
+
+          default:
+            return 0;
+        }
+
+        return scoreB - scoreA; // Descending order
+      });
+    }
+
+    setFilteredStartups(result);
+  }, [selectedSector, selectedWeightage, startups]);
 
   //   const handleGenerateReport = (startup) => {
   //     navigate("/generate-report", { state: { startup } });
@@ -84,14 +221,21 @@ const InvestorDeals = () => {
             🚀 Discover Promising Startup Deals
           </h2>
 
+          {/* Add the Filter Component */}
+          <DealsFilter
+            selectedSector={selectedSector}
+            setSelectedSector={setSelectedSector}
+            selectedWeightage={selectedWeightage}
+            setSelectedWeightage={setSelectedWeightage}
+          />
           {loading ? (
             <p className="text-center text-muted">Loading startups...</p>
-          ) : startups.length === 0 ? (
+          ) : filteredStartups.length === 0 ? (
             <p className="text-center text-muted">
               No startup deals available yet.
             </p>
           ) : (
-            startups.map((startup, index) => (
+            filteredStartups.map((startup, index) => (
               <div
                 key={index}
                 className="card shadow-sm border-0 mb-5 rounded-4"
@@ -117,6 +261,40 @@ const InvestorDeals = () => {
                     >
                       {startup.startupName}
                     </h5>
+                    {(() => {
+                      try {
+                        // Parse the JSON string inside first_memo
+                        const memo =
+                          typeof startup?.bigqueryData?.first_memo === "string"
+                            ? JSON.parse(startup.bigqueryData.first_memo)
+                            : startup?.bigqueryData?.first_memo;
+
+                        const sector =
+                          memo?.investment_memo?.executive_summary?.sector;
+
+                        return (
+                          sector && (
+                            <p className="mb-1">
+                              <strong>Sector:</strong> {sector}
+                            </p>
+                          )
+                        );
+                      } catch (err) {
+                        console.error("Error parsing first_memo:", err);
+                        return null;
+                      }
+                    })()}
+
+                    {/* {startup?.bigqueryData.first_memo?.investment_memo
+                      ?.executive_summary?.sector && (
+                      <p className="mb-1">
+                        <strong>Sector:</strong>{" "}
+                        {
+                          startup?.bigqueryData.first_memo?.investment_memo
+                            ?.executive_summary?.sector
+                        }
+                      </p>
+                    )} */}
                     <small className="text-muted">
                       Founded in {startup.incorporationMonth}{" "}
                       {startup.incorporationYear}
