@@ -714,7 +714,7 @@ app.add_middleware(
 # Combine Socket.IO with FastAPI
 sio_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path="ws")
 
-# ===== Queue for clients waiting for first question =====
+# ===== Queue for clients waiting for first question =======
 pending_first_questions: Dict[str, bool] = {}
 
 async def sanitize_for_bq(data):
