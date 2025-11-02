@@ -56,7 +56,7 @@ import pytz
 # from datetime import datetime
 from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
-
+from google import genai
 
 # ===== Logging =====
 logging.basicConfig(level=logging.INFO)
@@ -67,15 +67,7 @@ BUCKET_NAME = "ai-analyst-uploads-files1"
 storage_client = storage.Client()
 
 vertexai.init(project="intense-subject-470817-v2", location="us-central1")
-import google.adk as adk
-from google import genai
-
-adk.init(
-    vertexai=True,
-    project="intense-subject-470817-v2",
-    location="us-central1"
-)
-
+genai_client = genai.Client()
 
 model = GenerativeModel("gemini-2.0-flash")
 
