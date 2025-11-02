@@ -6,9 +6,10 @@ steps:
         "build",
         "-t",
         "us-central1-docker.pkg.dev/intense-subject-470817-v2/final-be/backend:${COMMIT_SHA}",
-        "./Backend",
+        "-f",
+        "./Backend/Dockerfile",
+        ".",
       ]
-
   # Step 2: Push the image to Artifact Registry
   - name: "gcr.io/cloud-builders/docker"
     args:

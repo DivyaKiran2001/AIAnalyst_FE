@@ -12,4 +12,4 @@ COPY . .
 EXPOSE 8080
 ENV PORT=8080
 
-CMD ["uvicorn", "agents.final_agent:sio_app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "Backend.agents.final_agent:sio_app", "--host", "0.0.0.0", "--port", "8080"]
