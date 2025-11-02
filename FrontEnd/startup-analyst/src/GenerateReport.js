@@ -11,7 +11,7 @@
 // import InvestorNavbar from "./InvestorNavbar";
 // import "./GenerateReport.css";
 
-// const BACKEND_URL = "http://localhost:8000";
+// const BACKEND_URL = "https://final-be-753168549263.us-central1.run.app";
 
 // const colors = {
 //   primary: "#2E86AB",
@@ -415,7 +415,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import InvestorNavbar from "./InvestorNavbar";
 import "./GenerateReport.css";
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "https://final-be-753168549263.us-central1.run.app";
 
 const colors = {
   primary: "#2E86AB",

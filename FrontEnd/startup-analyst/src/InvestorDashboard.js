@@ -29,9 +29,9 @@ const InvestorDashboard = () => {
 
   useEffect(() => {
     const checkConnection = async () => {
-      // const res = await fetch(`http://localhost:8000/api/google/is_connected?email=${investorEmail}`);
+      // const res = await fetch(`https://final-be-753168549263.us-central1.run.app/api/google/is_connected?email=${investorEmail}`);
       const res = await fetch(
-        `http://localhost:8000/api/google/is_connected?email=${investorEmail}`
+        `https://final-be-753168549263.us-central1.run.app/api/google/is_connected?email=${investorEmail}`
       );
       const data = await res.json();
       setCalendarConnected(data.connected);
@@ -46,10 +46,10 @@ const InvestorDashboard = () => {
     const fetchMeetings = async () => {
       try {
         // const res = await fetch(
-        //   `http://localhost:8000/api/meetings/investor/${investorEmail}`
+        //   `https://final-be-753168549263.us-central1.run.app/api/meetings/investor/${investorEmail}`
         // );
         const res = await fetch(
-          `http://localhost:8000/api/meetings/investor/${investorEmail}`
+          `https://final-be-753168549263.us-central1.run.app/api/meetings/investor/${investorEmail}`
         );
         const data = await res.json();
         setMeetings(data.meetings || []);
@@ -67,10 +67,10 @@ const InvestorDashboard = () => {
     setLoadingSlots(true);
     try {
       // const res = await fetch(
-      //   `http://localhost:8000/api/founder/slots?founderEmail=${meetingData.founderEmail}&date=${meetingData.date}`
+      //   `https://final-be-753168549263.us-central1.run.app/api/founder/slots?founderEmail=${meetingData.founderEmail}&date=${meetingData.date}`
       // );
       const res = await fetch(
-        `http://localhost:8000/api/founder/slots?founderEmail=${meetingData.founderEmail}&date=${meetingData.date}`
+        `https://final-be-753168549263.us-central1.run.app/api/founder/slots?founderEmail=${meetingData.founderEmail}&date=${meetingData.date}`
       );
       const data = await res.json();
       setAvailableSlots(
@@ -87,7 +87,7 @@ const InvestorDashboard = () => {
   // const handleGrantCalendarAccess = async () => {
   //   try {
   //     const res = await fetch(
-  //       `http://localhost:8000/api/google/authorize?email=${investorEmail}`
+  //       `https://final-be-753168549263.us-central1.run.app/api/google/authorize?email=${investorEmail}`
   //     );
   //     const data = await res.json();
   //     window.location.href = data.auth_url; // Redirect to Google consent screen
@@ -102,9 +102,11 @@ const InvestorDashboard = () => {
     const fetchData = async () => {
       try {
         const [startupRes, interestRes] = await Promise.all([
-          fetch("http://localhost:8000/api/startups"),
           fetch(
-            `http://localhost:8000/api/interests?investorEmail=${investorEmail}`
+            "https://final-be-753168549263.us-central1.run.app/api/startups"
+          ),
+          fetch(
+            `https://final-be-753168549263.us-central1.run.app/api/interests?investorEmail=${investorEmail}`
           ),
         ]);
         const startupData = await startupRes.json();
@@ -125,16 +127,19 @@ const InvestorDashboard = () => {
   // Express interest
   const handleInterest = async (founderEmail, startupName, investorEmail) => {
     try {
-      const res = await fetch("http://localhost:8000/api/interests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          startupName,
-          founderEmail,
-          investorEmail,
-          status: "pending",
-        }),
-      });
+      const res = await fetch(
+        "https://final-be-753168549263.us-central1.run.app/api/interests",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            startupName,
+            founderEmail,
+            investorEmail,
+            status: "pending",
+          }),
+        }
+      );
 
       if (res.ok) {
         alert("Interest sent to founder!");
@@ -204,11 +209,14 @@ const InvestorDashboard = () => {
 
     try {
       setSubmitting(true);
-      const res = await fetch(`http://localhost:8000/api/meetings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        `https://final-be-753168549263.us-central1.run.app/api/meetings`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
       if (!res.ok) {
         const err = await res.json();

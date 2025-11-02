@@ -275,7 +275,7 @@ user_credentials_collection = db["UserGoogleCredentials"]
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
-REDIRECT_URI = "http://localhost:8000/api/google/oauth2callback"
+REDIRECT_URI = "https://final-be-753168549263.us-central1.run.app/api/google/oauth2callback"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 

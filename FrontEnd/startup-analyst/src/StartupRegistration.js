@@ -89,7 +89,7 @@ export default function StartupRegistration() {
       const token = await user.getIdToken();
 
       await axios.post(
-        "http://localhost:8000/api/founder-details",
+        "https://final-be-753168549263.us-central1.run.app/api/founder-details",
         {
           yourName: formData.yourName,
           emailId: formData.emailId,
@@ -103,7 +103,7 @@ export default function StartupRegistration() {
       );
 
       await axios.post(
-        "http://localhost:8000/api/startup-details",
+        "https://final-be-753168549263.us-central1.run.app/api/startup-details",
         {
           startupName: formData.startupName,
           registeredName: formData.registeredName,

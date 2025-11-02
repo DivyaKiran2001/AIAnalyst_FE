@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { FaFilePdf, FaDownload, FaChartLine } from "react-icons/fa";
 import DealsFilter from "./DealsFilter";
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "https://final-be-753168549263.us-central1.run.app";
 
 const InvestorDeals = () => {
   const [startups, setStartups] = useState([]);

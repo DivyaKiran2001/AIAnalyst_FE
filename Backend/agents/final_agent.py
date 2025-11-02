@@ -67,6 +67,15 @@ BUCKET_NAME = "ai-analyst-uploads-files1"
 storage_client = storage.Client()
 
 vertexai.init(project="intense-subject-470817-v2", location="us-central1")
+import google.adk as adk
+from google import genai
+
+adk.init(
+    vertexai=True,
+    project="intense-subject-470817-v2",
+    location="us-central1"
+)
+
 
 model = GenerativeModel("gemini-2.0-flash")
 
@@ -1102,7 +1111,7 @@ user_credentials_collection = db["UserGoogleCredentials"]
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
-REDIRECT_URI = "http://localhost:8000/api/google/oauth2callback"
+REDIRECT_URI = "https://final-be-753168549263.us-central1.run.app/api/google/oauth2callback"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 

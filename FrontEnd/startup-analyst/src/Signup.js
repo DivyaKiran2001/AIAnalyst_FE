@@ -197,18 +197,21 @@ const AuthPage = () => {
 
       const token = await result.user.getIdToken(true);
 
-      const res = await fetch("http://localhost:8000/api/auth", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          role,
-        }),
-      });
+      const res = await fetch(
+        "https://final-be-753168549263.us-central1.run.app/api/auth",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            role,
+          }),
+        }
+      );
 
       const data = await res.json();
       sessionStorage.setItem("emailId", data.user.email);
@@ -230,18 +233,21 @@ const AuthPage = () => {
 
       const token = await user.getIdToken(true);
 
-      const res = await fetch("http://localhost:8000/api/auth", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          email: user.email,
-          password: null,
-          role,
-        }),
-      });
+      const res = await fetch(
+        "https://final-be-753168549263.us-central1.run.app/api/auth",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            email: user.email,
+            password: null,
+            role,
+          }),
+        }
+      );
 
       const data = await res.json();
       // ✅ Store user details before navigating

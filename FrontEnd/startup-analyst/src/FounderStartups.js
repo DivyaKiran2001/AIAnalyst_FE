@@ -3,9 +3,9 @@
 // import FounderNavbar from "./FounderNavbar";
 
 // // const BACKEND_URL =
-// //   "http://localhost:8000";
+// //   "https://final-be-753168549263.us-central1.run.app";
 
-// const BACKEND_URL = "http://localhost:8000";
+// const BACKEND_URL = "https://final-be-753168549263.us-central1.run.app";
 
 // const FounderStartups = () => {
 //   const [startups, setStartups] = useState([]);
@@ -72,7 +72,7 @@ import FounderNavbar from "./FounderNavbar";
 import { Modal, Button } from "react-bootstrap";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "https://final-be-753168549263.us-central1.run.app";
 
 const FounderStartups = () => {
   const [startups, setStartups] = useState([]);

@@ -48,7 +48,7 @@
 //       formData.append("startupName", startupName);
 //       console.log(formData);
 
-//       await axios.post("http://localhost:8000/upload-and-analyze", formData, {
+//       await axios.post("https://final-be-753168549263.us-central1.run.app/upload-and-analyze", formData, {
 //         headers: { "Content-Type": "multipart/form-data" },
 //         onUploadProgress: (p) =>
 //           setProgress(Math.round((p.loaded * 100) / (p.total || 1))),
@@ -187,11 +187,15 @@ export default function StartupDocumentUploader({
       formData.append("emailId", emailId);
       formData.append("startupName", startupName);
 
-      await axios.post("http://localhost:8000/upload-and-analyze", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (p) =>
-          setProgress(Math.round((p.loaded * 100) / (p.total || 1))),
-      });
+      await axios.post(
+        "https://final-be-753168549263.us-central1.run.app/upload-and-analyze",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (p) =>
+            setProgress(Math.round((p.loaded * 100) / (p.total || 1))),
+        }
+      );
 
       // Show spinner before moving to Step 4
       setLoading(true);
