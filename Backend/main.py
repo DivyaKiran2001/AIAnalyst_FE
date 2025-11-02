@@ -315,7 +315,7 @@ class MeetingRequest(BaseModel):
     investorEmail: EmailStr
     proposedDateTime: datetime
 
-# Meeting Model
+# Meeting Model metting
 class RespondMeeting(BaseModel):
     meetingId: str
     action: str  # accept or decline
