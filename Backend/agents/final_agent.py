@@ -56,7 +56,7 @@ import pytz
 # from datetime import datetime
 from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
-# from google import genai
+
 
 # ===== Logging =====
 logging.basicConfig(level=logging.INFO)
@@ -66,8 +66,12 @@ logger = logging.getLogger("pipeline_logger")
 BUCKET_NAME = "ai-analyst-uploads-files1"
 storage_client = storage.Client()
 
-vertexai.init(project="intense-subject-470817-v2", location="us-central1")
-# genai_client = genai.Client()
+# vertexai.init(project="intense-subject-470817-v2", location="us-central1")
+# Initialize Vertex AI using env vars you already set
+vertexai.init(
+    project=os.environ["GOOGLE_CLOUD_PROJECT"],
+    location=os.environ["GOOGLE_CLOUD_LOCATION"]
+)
 
 model = GenerativeModel("gemini-2.0-flash")
 
