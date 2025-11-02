@@ -65,12 +65,14 @@ logger = logging.getLogger("pipeline_logger")
 # ===== GCS Setup =====
 BUCKET_NAME = "ai-analyst-uploads-files1"
 storage_client = storage.Client()
+creds = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 # vertexai.init(project="intense-subject-470817-v2", location="us-central1")
 # Initialize Vertex AI using env vars you already set
 vertexai.init(
     project=os.environ["GOOGLE_CLOUD_PROJECT"],
-    location=os.environ["GOOGLE_CLOUD_LOCATION"]
+    location=os.environ["GOOGLE_CLOUD_LOCATION"],
+    credentials=creds
 )
 
 model = GenerativeModel("gemini-2.0-flash")
