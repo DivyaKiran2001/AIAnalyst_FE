@@ -1161,9 +1161,16 @@ sio_app = socketio.ASGIApp(sio, app)
 
 import firebase_admin
 from firebase_admin import credentials, auth
-cred = credentials.Certificate(
-    r"D:\GenAI_Exchange\AIAnalyst_FE\Backend\aianalyst-61509-firebase-adminsdk-fbsvc-17fb406b27.json"
-)
+# cred = credentials.Certificate(
+#     r"D:\GenAI_Exchange\AIAnalyst_FE\Backend\aianalyst-61509-firebase-adminsdk-fbsvc-17fb406b27.json"
+# )
+# firebase_admin.initialize_app(cred)
+
+# Get path from environment variable (defined in Cloud Run)
+firebase_cred_path = os.getenv("cred")
+
+# Initialize Firebase Admin SDK
+cred = credentials.Certificate(firebase_cred_path)
 firebase_admin.initialize_app(cred)
 
 
