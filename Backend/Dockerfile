@@ -11,14 +11,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend source code
-COPY . /app/Backend
+COPY . .
 
-# Expose Cloud Run port
+# Expose Cloud Run por
 EXPOSE 8080
 ENV PORT=8080
 
 # Run the FastAPI + Socket.IO app
-# CMD uvicorn Backend.agents.final_agent:sio_app --host 0.0.0.0 --port 8000 --reload
-CMD exec uvicorn Backend.agents.final_agent:sio_app --host 0.0.0.0 --port ${PORT}
-
+CMD uvicorn Backend.agents.final_agent:sio_app --host 0.0.0.0 --port ${PORT:-8080}
 
