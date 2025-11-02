@@ -11,7 +11,7 @@ from fastapi import HTTPException
 
 
 
-# Load .env
+# Load .env variable
 load_dotenv(r"D:\GenAI_Exchange\AIAnalyst_FE\Backend\.env")
 
 
